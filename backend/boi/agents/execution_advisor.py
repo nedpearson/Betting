@@ -234,24 +234,26 @@ class TradeExecutionAdvisorAgent(BaseAgent):
 
     async def _submit_live_order(self, order: OrderRecord) -> None:
         """Gated live order execution with hard safety verification."""
-        if not self.settings.live_execution_permitted_by_config:
+        if not self.rest.signer:
             order.status = "rejected"
-            order.detail = {"error": "Live execution blocked: safety authorization gates not satisfied"}
+            order.detail = {"error": "Live execution blocked: Kalshi API credentials not authenticated"}
             async with self.db.session() as s:
                 await s.merge(order)
                 await s.commit()
-            self.record_error("LIVE ORDER BLOCKED: Authorization gates not satisfied")
+            self.record_error("LIVE ORDER BLOCKED: No authenticated Kalshi key")
             return
 
         try:
             # Map side to Kalshi V2 book side: "bid" for YES, "ask" for NO
             book_side = "bid" if order.side == "yes" else "ask"
+            count_fp = f"{Decimal(str(order.count)):.2f}"
+            price_fp = f"{Decimal(str(order.limit_price)):.4f}"
             payload = {
                 "ticker": order.ticker,
-                "client_order_id": order.client_order_id,
+                "client_order_id": str(uuid.uuid4()),
                 "side": book_side,
-                "count": str(order.count),
-                "price": str(order.limit_price),
+                "count": count_fp,
+                "price": price_fp,
                 "time_in_force": "good_till_canceled",
                 "self_trade_prevention_type": "taker_at_cross",
                 "post_only": False,

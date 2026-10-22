@@ -170,12 +170,12 @@ export const App: React.FC = () => {
     setIsExecuting(true);
     try {
       const res = await placeOrder(ticker, side, contracts, price);
-      if (res.status === 'FILLED' || res.status === 'PLACED') {
-        showToast(`Order submitted: ${contracts}x ${ticker} ${side.toUpperCase()} at $${price.toFixed(4)} (${res.mode || 'Paper'})`, 'success');
-      } else if (res.status === 'REJECTED') {
-        showToast(`Order rejected by risk governor: ${res.reason}`, 'warn');
+      if (['FILLED', 'PLACED', 'executed', 'resting', 'partially_filled'].includes(res.status)) {
+        showToast(`Order confirmed: ${contracts}x ${ticker} ${side.toUpperCase()} @ $${price.toFixed(4)} (Status: ${res.status.toUpperCase()})`, 'success');
+      } else if (res.status === 'REJECTED' || res.status === 'rejected') {
+        showToast(`Order rejected: ${res.reason || res.detail || 'Risk limit or gate blocked execution'}`, 'warn');
       } else {
-        showToast(`Order response: ${res.status || 'OK'}`, 'info');
+        showToast(`Order response: ${res.status || 'Received'}`, 'info');
       }
       refreshAll();
     } catch (err) {

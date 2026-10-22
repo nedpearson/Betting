@@ -179,7 +179,47 @@ def create_app(
         from .portfolio import PortfolioTracker
         tracker = PortfolioTracker(db=db, settings=cfg)
         await tracker.reload_positions()
-        return tracker.mark_to_market(mids)
+        res = tracker.mark_to_market(mids)
+
+        # Reconcile with live Kalshi if credentials are authenticated
+        if agent_system.rest and agent_system.rest.signer:
+            try:
+                bal = await agent_system.rest.get_balance()
+                bal_cents = bal.get("balance", 0)
+                port_cents = bal.get("portfolio_value", 0)
+                cash_dlrs = Decimal(bal_cents) / Decimal(100)
+                port_dlrs = Decimal(port_cents) / Decimal(100)
+                total_dlrs = cash_dlrs + port_dlrs
+
+                res["starting_bankroll"] = f"{total_dlrs:.2f}"
+                res["available_cash"] = f"{cash_dlrs:.2f}"
+                res["total_equity"] = f"{total_dlrs:.2f}"
+                res["total_open_risk"] = f"{port_dlrs:.2f}"
+                res["kalshi_connected"] = True
+
+                pos_data = await agent_system.rest.get_positions()
+                m_pos = pos_data.get("market_positions", [])
+                if m_pos:
+                    k_positions = []
+                    for mp in m_pos:
+                        pos_fp = mp.get("position_fp", "0")
+                        cost = mp.get("market_exposure_dollars", "0")
+                        pnl = mp.get("realized_pnl_dollars", "0")
+                        k_positions.append({
+                            "ticker": mp.get("ticker", ""),
+                            "side": "yes",
+                            "contracts": str(round(float(pos_fp) / 100.0, 2)) if float(pos_fp) >= 100 else str(pos_fp),
+                            "avg_entry": f"{float(cost):.2f}" if cost else "0.00",
+                            "current_mid": None,
+                            "unrealized_pnl": f"{float(pnl):.2f}",
+                            "cost_basis": f"{float(cost):.2f}" if cost else "0.00",
+                        })
+                    res["open_positions_count"] = len(k_positions)
+                    res["positions"] = k_positions
+            except Exception as e:
+                logger.warning("Could not sync live Kalshi portfolio: %s", e)
+
+        return res
 
     @app.get("/api/calibration")
     async def get_calibration():

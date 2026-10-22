@@ -166,7 +166,7 @@ export const BestTradeCard: React.FC<BestTradeCardProps> = ({
             Model vs Market
           </div>
           <div className="text-xl sm:text-2xl font-black text-sky-400 font-mono">
-            {(parseFloat(opp.model_prob) * 100).toFixed(0)}% <span className="text-xs text-zinc-500 font-normal">vs</span> {(parseFloat(opp.market_price) * 100).toFixed(0)}¢
+            {(parseFloat(opp.estimated_probability || (opp as any).model_prob || '0') * 100).toFixed(0)}% <span className="text-xs text-zinc-500 font-normal">vs</span> {(parseFloat(opp.market_probability || opp.entry_price || (opp as any).market_price || '0') * 100).toFixed(0)}¢
           </div>
           <div className="text-xs text-zinc-400 mt-1 font-medium">True probability advantage</div>
         </div>
