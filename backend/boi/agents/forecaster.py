@@ -64,7 +64,7 @@ class QuantitativeForecastingAgent(BaseAgent):
             self.mark_active()
             try:
                 async with self.db.session() as s:
-                    stmt = select(MarketRecord).where(MarketRecord.status.in_(["active", "open"])).limit(30)
+                    stmt = select(MarketRecord).where(MarketRecord.status.in_(["active", "open"])).limit(500)
                     res = await s.execute(stmt)
                     markets = list(res.scalars().all())
 
@@ -84,7 +84,7 @@ class QuantitativeForecastingAgent(BaseAgent):
                     )
             except Exception as e:
                 log.debug("Forecast loop exception: %s", e)
-            await asyncio.sleep(15.0)
+            await asyncio.sleep(6.0)
 
     async def forecast_market(self, market: MarketRecord) -> ForecastRecord | None:
         self.mark_active()
