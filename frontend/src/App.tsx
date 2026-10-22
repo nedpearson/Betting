@@ -107,6 +107,7 @@ export const App: React.FC = () => {
     price: 0.39,
   });
 
+  const [selectedOppIndex, setSelectedOppIndex] = useState<number>(0);
   const [toastMessage, setToastMessage] = useState<{ text: string; type: 'success' | 'warn' | 'info' } | null>(null);
 
   const showToast = (text: string, type: 'success' | 'warn' | 'info' = 'info') => {
@@ -473,22 +474,33 @@ export const App: React.FC = () => {
               )}
             </div>
 
-            {/* Focal Point Decision Card */}
+            {/* Focal Point Decision Card with Multi-Trade Carousel & AI Thesis */}
             <BestTradeCard
               data={bestTrade}
+              opportunities={opportunities}
+              selectedIndex={selectedOppIndex}
+              onSelectIndex={setSelectedOppIndex}
+              markets={markets}
               onExecute={handleOpenTradeDrawer}
               isExecuting={isExecuting}
             />
 
             {/* Candidate Leaderboard */}
             <div className="space-y-2">
-              <h3 className="text-xs font-bold text-zinc-400 uppercase tracking-wider font-mono">
-                Ranked Candidate Leaderboard
-              </h3>
               <OpportunitiesTable
                 opportunities={opportunities}
+                selectedTicker={opportunities[selectedOppIndex]?.ticker}
+                onViewThesis={(item: any) => {
+                  const idx = opportunities.findIndex((o) => o.ticker === item.ticker);
+                  if (idx >= 0) {
+                    setSelectedOppIndex(idx);
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }
+                }}
                 onSelect={(opp: any) => {
                   const item = opp.payload || opp;
+                  const idx = opportunities.findIndex((o) => o.ticker === item.ticker);
+                  if (idx >= 0) setSelectedOppIndex(idx);
                   const isNo = (item.action === 'BUY_NO');
                   const side: 'yes' | 'no' = isNo ? 'no' : 'yes';
                   const contracts = parseInt(item.recommended_contracts) || 10;
