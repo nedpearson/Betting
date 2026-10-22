@@ -56,7 +56,7 @@ export const TradeDrawer: React.FC<TradeDrawerProps> = ({
           p = parseFloat((1.0 - parseFloat(market.yes_bid)).toFixed(2));
         }
       }
-      p = Math.max(0.01, Math.min(0.99, p));
+      p = Math.max(0.01, Math.min(0.99, parseFloat(p.toFixed(2))));
       setPrice(p);
 
       const c = initialContracts && initialContracts > 0 ? initialContracts : 10;
@@ -110,7 +110,7 @@ export const TradeDrawer: React.FC<TradeDrawerProps> = ({
       } else if (newSide === 'no' && market.yes_bid) {
         p = parseFloat((1.0 - parseFloat(market.yes_bid)).toFixed(2));
       }
-      p = Math.max(0.01, Math.min(0.99, p));
+      p = Math.max(0.01, Math.min(0.99, parseFloat(p.toFixed(2))));
       setPrice(p);
       setDollarAmount((contracts * p).toFixed(2));
     }
@@ -118,7 +118,7 @@ export const TradeDrawer: React.FC<TradeDrawerProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onExecute(market.ticker, side, contracts, price);
+    onExecute(market.ticker, side, contracts, parseFloat(price.toFixed(2)));
   };
 
   return (
@@ -156,7 +156,7 @@ export const TradeDrawer: React.FC<TradeDrawerProps> = ({
         </div>
 
         {/* Order Form Body */}
-        <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
+        <form onSubmit={handleSubmit} noValidate className="flex flex-col flex-1 overflow-hidden">
           <div className="p-5 sm:p-6 overflow-y-auto space-y-4 flex-1">
             
             {/* Side Selector (Outcome: YES vs NO) */}
@@ -219,8 +219,8 @@ export const TradeDrawer: React.FC<TradeDrawerProps> = ({
               <span className="absolute left-4 text-2xl font-black text-emerald-400 font-mono">$</span>
               <input
                 type="number"
-                step="0.50"
-                min="0.50"
+                step="any"
+                min="0.01"
                 value={dollarAmount}
                 onChange={(e) => handleDollarChange(e.target.value)}
                 placeholder={(contracts * price).toFixed(2)}
@@ -271,10 +271,10 @@ export const TradeDrawer: React.FC<TradeDrawerProps> = ({
                   <span className="text-zinc-500 font-mono text-base mr-0.5">$</span>
                   <input
                     type="number"
-                    step="0.01"
+                    step="any"
                     min="0.01"
                     max="0.99"
-                    value={price}
+                    value={price.toFixed(2)}
                     onChange={(e) => handlePriceChange(parseFloat(e.target.value) || 0.01)}
                     className="w-16 text-center bg-transparent text-xl sm:text-2xl font-black font-mono text-white focus:outline-none focus:bg-zinc-900 rounded-lg py-1"
                   />
@@ -303,6 +303,7 @@ export const TradeDrawer: React.FC<TradeDrawerProps> = ({
                 <div className="flex items-center justify-center">
                   <input
                     type="number"
+                    step="1"
                     min="1"
                     value={contracts}
                     onChange={(e) => handleContractsChange(parseInt(e.target.value) || 1)}
