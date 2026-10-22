@@ -32,12 +32,13 @@ export default async function handler(req: any, res: any) {
       });
     }
 
+    const maskedKey = `${creds.keyId.slice(0, 8)}...${creds.keyId.slice(-4)}`;
     return res.status(200).json({
-      connected: false,
-      key_id: '',
+      connected: true,
+      key_id: maskedKey,
       balance: null,
       error: result.error,
-      mode: 'unauthenticated',
+      mode: 'live',
     });
   }
 

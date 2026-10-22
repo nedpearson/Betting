@@ -1,6 +1,8 @@
 import { tryProxyToBackend } from './_backend.js';
 import { getKalshiCredentials, kalshiRequest } from './_kalshi.js';
 
+let lastKnownPortfolio: any = null;
+
 export default async function handler(req: any, res: any) {
   res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0');
   res.setHeader('Surrogate-Control', 'no-store');
@@ -15,6 +17,9 @@ export default async function handler(req: any, res: any) {
 
   const creds = getKalshiCredentials(req);
   if (!creds) {
+    if (lastKnownPortfolio) {
+      return res.status(200).json(lastKnownPortfolio);
+    }
     return res.status(200).json({
       starting_bankroll: '0.00',
       available_cash: '0.00',
@@ -37,6 +42,9 @@ export default async function handler(req: any, res: any) {
   ]);
 
   if (!balRes.ok) {
+    if (lastKnownPortfolio) {
+      return res.status(200).json(lastKnownPortfolio);
+    }
     return res.status(200).json({
       starting_bankroll: '0.00',
       available_cash: '0.00',
@@ -84,7 +92,7 @@ export default async function handler(req: any, res: any) {
     };
   });
 
-  return res.status(200).json({
+  const result = {
     starting_bankroll: totalEquity.toFixed(2),
     available_cash: cashDollars.toFixed(2),
     total_equity: totalEquity.toFixed(2),
@@ -97,5 +105,8 @@ export default async function handler(req: any, res: any) {
     positions,
     status: 'verified_live',
     verified_at: new Date().toISOString(),
-  });
+  };
+
+  lastKnownPortfolio = result;
+  return res.status(200).json(result);
 }

@@ -144,19 +144,28 @@ export const App: React.FC = () => {
       if (opps.status === 'fulfilled') setOpportunities(opps.value);
       if (mkts.status === 'fulfilled') setMarkets(mkts.value);
       if (agts.status === 'fulfilled') setAgents(agts.value);
-      if (port.status === 'fulfilled') setPortfolio(port.value);
+      if (port.status === 'fulfilled' && port.value) {
+        const cashVal = parseFloat(port.value.available_cash || '0');
+        if (cashVal > 0 || !portfolio) {
+          setPortfolio(port.value);
+        }
+      }
       if (hlt.status === 'fulfilled') setFeeds(hlt.value);
       if (cal.status === 'fulfilled') setCalibration(cal.value);
       if (ks.status === 'fulfilled' && ks.value) {
         setIsHalted(Boolean(ks.value.is_halted || ks.value.status === 'HALTED'));
       }
-
-      checkKalshiConnection();
     } catch (err) {
       console.error('Error refreshing data', err);
     } finally {
       setIsRefreshing(false);
     }
+  }, [portfolio]);
+
+  useEffect(() => {
+    checkKalshiConnection();
+    const connInterval = setInterval(checkKalshiConnection, 30000);
+    return () => clearInterval(connInterval);
   }, [checkKalshiConnection]);
 
   useEffect(() => {

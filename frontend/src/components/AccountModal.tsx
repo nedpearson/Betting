@@ -150,8 +150,14 @@ export const AccountModal: React.FC<AccountModalProps> = ({
     }
   };
 
-  const cashDisplay = portfolioData?.available_cash || accountInfo?.balance_dollars || '0.00';
-  const equityDisplay = portfolioData?.total_equity || '0.00';
+  const cashDisplay = 
+    (portfolioData?.available_cash && parseFloat(portfolioData.available_cash) > 0 ? portfolioData.available_cash : null) || 
+    (accountInfo?.balance_dollars && parseFloat(accountInfo.balance_dollars) > 0 ? accountInfo.balance_dollars : null) || 
+    portfolioData?.available_cash || 
+    '0.00';
+  const equityDisplay = 
+    (portfolioData?.total_equity && parseFloat(portfolioData.total_equity) > 0 ? portfolioData.total_equity : null) || 
+    cashDisplay;
   const openRiskDisplay = portfolioData?.total_open_risk || accountInfo?.portfolio_value_dollars || '0.00';
   const positionsCount = portfolioData?.open_positions_count || 0;
 
