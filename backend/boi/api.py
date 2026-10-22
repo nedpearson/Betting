@@ -246,13 +246,13 @@ def create_app(
     @app.get("/api/settings/kalshi")
     async def get_kalshi_status():
         """Retrieve Kalshi connection status, masked key ID, and real balance if authenticated."""
-        has_key = bool(agent_system.rest_client.signer)
-        key_id = agent_system.rest_client.settings.kalshi_api_key_id
+        has_key = bool(agent_system.rest.signer)
+        key_id = agent_system.rest.settings.kalshi_api_key_id
         masked = (key_id[:6] + "..." + key_id[-4:]) if key_id and len(key_id) > 10 else (key_id or "")
         balance = None
         if has_key:
             try:
-                balance = await agent_system.rest_client.get_balance()
+                balance = await agent_system.rest.get_balance()
             except Exception as e:
                 balance = {"error": str(e)}
         return {
@@ -286,9 +286,9 @@ def create_app(
                 if resp.status_code == 200:
                     balance_data = resp.json()
                     # Apply credentials in-memory
-                    agent_system.rest_client.signer = signer
-                    agent_system.rest_client.settings.kalshi_api_key_id = key_id
-                    agent_system.rest_client.settings.kalshi_private_key_pem = SecretStr(private_key_pem)
+                    agent_system.rest.signer = signer
+                    agent_system.rest.settings.kalshi_api_key_id = key_id
+                    agent_system.rest.settings.kalshi_private_key_pem = SecretStr(private_key_pem)
                     return {
                         "success": True,
                         "connected": True,
