@@ -81,15 +81,18 @@ class LiveMarketMonitorAgent(BaseAgent):
     async def _poll_loop(self) -> None:
         """Periodic REST refresh across tracked markets when WS is unauthenticated or auxiliary."""
         while self._running:
+            self.mark_active()
             tickers = list(self.books.keys())
             if tickers:
-                self.mark_active()
                 # Sample or batch through tracked markets
                 for ticker in tickers[:40]:  # stay well within token bucket
                     if not self._running:
                         break
                     await self.refresh_single_book(ticker)
                     await asyncio.sleep(0.3)
+                self.record_decision(f"Order Book Monitor: Active | Polled {min(40, len(tickers))} books")
+            else:
+                self.record_decision("Order Book Monitor: Active | Monitoring order book synchronizer")
             await asyncio.sleep(15.0)
 
     async def _ui_tick_loop(self) -> None:

@@ -246,8 +246,18 @@ class ChiefInvestmentOfficerAgent(BaseAgent):
 
     async def _orchestration_loop(self) -> None:
         while self._running:
+            self.mark_active()
             try:
-                await self.scan_and_rank_opportunities()
+                cands = await self.scan_and_rank_opportunities()
+                if cands:
+                    self.record_decision(
+                        f"CIO Ranking: {len(cands)} qualified opportunities approved; Top pick: {cands[0].ticker} ({cands[0].action})",
+                        {"top_ticker": cands[0].ticker, "action": cands[0].action},
+                    )
+                else:
+                    self.record_decision(
+                        f"CIO Sentry: Scanned active forecast universe; {self.no_trade_reason}",
+                    )
             except Exception as e:
                 self.record_error(f"CIO orchestration loop error: {e}")
             await asyncio.sleep(10.0)

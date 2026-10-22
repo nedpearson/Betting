@@ -6,6 +6,7 @@ Rejects trades without a statistically defensible conservative edge.
 
 from __future__ import annotations
 
+import asyncio
 import logging
 from dataclasses import dataclass
 from decimal import Decimal
@@ -37,6 +38,33 @@ class ExpectedValueAnalystAgent(BaseAgent):
         super().__init__(name="Agent-10-ExpectedValueAnalyst", role="Quantitative EV & Margin Analyst", bus=bus)
         self.books = books
         self.settings = settings or get_settings()
+        self._running = False
+        self._task: asyncio.Task | None = None
+
+    def start(self) -> None:
+        if self._task is None:
+            self._running = True
+            self._task = asyncio.create_task(self._ev_loop(), name="ev-analyst-agent")
+
+    async def stop(self) -> None:
+        self._running = False
+        if self._task:
+            self._task.cancel()
+            try:
+                await self._task
+            except asyncio.CancelledError:
+                pass
+            self._task = None
+
+    async def _ev_loop(self) -> None:
+        while self._running:
+            self.mark_active()
+            books_count = len(self.books)
+            self.record_decision(
+                f"EV & Margin Engine active: monitoring {books_count} order books | Quadratic taker fee deduction enabled (7% * C * P * (1-P))",
+                {"monitored_books": books_count},
+            )
+            await asyncio.sleep(12.0)
 
     def evaluate_market(self, forecast: ForecastRecord, base_contracts: Decimal = Decimal("10")) -> TradeSignal:
         self.mark_active()

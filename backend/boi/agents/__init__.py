@@ -148,16 +148,17 @@ class AgentSystem:
         ]
 
     def start(self) -> None:
-        self.discovery.start()
-        self.monitor.start()
-        self.crypto.start()
-        self.cio.start()
+        for agent in self.agents:
+            if hasattr(agent, "start"):
+                agent.start()
 
     async def stop(self) -> None:
-        await self.discovery.stop()
-        await self.monitor.stop()
-        await self.crypto.stop()
-        await self.cio.stop()
+        for agent in self.agents:
+            if hasattr(agent, "stop"):
+                try:
+                    await agent.stop()
+                except Exception:
+                    pass
 
     def snapshot(self) -> list[dict[str, Any]]:
         return [a.snapshot() for a in self.agents]

@@ -6,9 +6,12 @@ Guarantees model independence where applicable and maintains uncertainty bounds.
 
 from __future__ import annotations
 
+import asyncio
 import logging
 import uuid
 from datetime import UTC, datetime
+
+from sqlalchemy import select
 
 from ..db import Database, ForecastRecord, MarketRecord
 from ..events import FORECAST_UPDATED, Event, EventBus
@@ -38,6 +41,50 @@ class QuantitativeForecastingAgent(BaseAgent):
         self.crypto = crypto_engine
         self.sports = sports_engine
         self.latest_forecasts: dict[str, ForecastRecord] = {}
+        self._running = False
+        self._task: asyncio.Task | None = None
+
+    def start(self) -> None:
+        if self._task is None:
+            self._running = True
+            self._task = asyncio.create_task(self._forecast_loop(), name="forecaster-agent")
+
+    async def stop(self) -> None:
+        self._running = False
+        if self._task:
+            self._task.cancel()
+            try:
+                await self._task
+            except asyncio.CancelledError:
+                pass
+            self._task = None
+
+    async def _forecast_loop(self) -> None:
+        while self._running:
+            self.mark_active()
+            try:
+                async with self.db.session() as s:
+                    stmt = select(MarketRecord).where(MarketRecord.status.in_(["active", "open"])).limit(30)
+                    res = await s.execute(stmt)
+                    markets = list(res.scalars().all())
+
+                if markets:
+                    modeled = 0
+                    for m in markets:
+                        rec = await self.forecast_market(m)
+                        if rec:
+                            modeled += 1
+                    self.record_decision(
+                        f"Forecast update cycle: {modeled}/{len(markets)} markets calibrated with probabilistic uncertainty intervals",
+                        {"total_markets": len(markets), "forecasted": modeled},
+                    )
+                else:
+                    self.record_decision(
+                        "Quantitative Modeler ready: awaiting active market records from Discovery",
+                    )
+            except Exception as e:
+                log.debug("Forecast loop exception: %s", e)
+            await asyncio.sleep(15.0)
 
     async def forecast_market(self, market: MarketRecord) -> ForecastRecord | None:
         self.mark_active()

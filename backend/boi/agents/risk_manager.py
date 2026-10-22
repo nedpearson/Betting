@@ -13,6 +13,7 @@ Enforces hard limits:
 
 from __future__ import annotations
 
+import asyncio
 import logging
 from dataclasses import dataclass
 from datetime import UTC, datetime
@@ -54,6 +55,34 @@ class PortfolioRiskManagerAgent(BaseAgent):
         self.halt_reason: str | None = None
         self.event_exposure: dict[str, Decimal] = {}
         self.category_exposure: dict[str, Decimal] = {}
+        self._running = False
+        self._task: asyncio.Task | None = None
+
+    def start(self) -> None:
+        if self._task is None:
+            self._running = True
+            self._task = asyncio.create_task(self._risk_loop(), name="risk-agent")
+
+    async def stop(self) -> None:
+        self._running = False
+        if self._task:
+            self._task.cancel()
+            try:
+                await self._task
+            except asyncio.CancelledError:
+                pass
+            self._task = None
+
+    async def _risk_loop(self) -> None:
+        while self._running:
+            self.mark_active()
+            max_risk = self.bankroll * self.settings.max_open_risk_pct
+            status = "HALTED" if self.is_halted else "NOMINAL"
+            self.record_decision(
+                f"Risk audit: Status={status} | Bankroll=${self.bankroll:.2f} | Open risk: ${self.open_risk:.2f}/${max_risk:.2f} ({(float(self.open_risk/max_risk)*100 if max_risk > ZERO else 0.0):.1f}%) | Daily loss: ${self.daily_loss:.2f}",
+                {"bankroll": float(self.bankroll), "open_risk": float(self.open_risk), "is_halted": self.is_halted},
+            )
+            await asyncio.sleep(10.0)
 
     def update_portfolio_state(
         self,

@@ -9,21 +9,30 @@ interface AgentCommandCenterProps {
 export const AgentCommandCenter: React.FC<AgentCommandCenterProps> = ({ agents }) => {
   const [selectedAgent, setSelectedAgent] = useState<AgentSnapshot | null>(null);
 
+  const activeCount = agents.filter((a) => a.status === 'ACTIVE').length;
+
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-4">
+      <div className="flex flex-wrap items-center justify-between gap-4 bg-[#0e1417] border border-zinc-800 p-5 rounded-2xl">
         <div>
-          <h2 className="text-base font-bold text-white uppercase tracking-wider font-mono flex items-center gap-2">
-            <Bot className="h-4 w-4 text-emerald-400" />
+          <h2 className="text-xl md:text-2xl font-bold text-white uppercase tracking-wider font-mono flex items-center gap-3">
+            <Bot className="h-6 w-6 text-emerald-400" />
             Specialized Multi-Agent Command Center
           </h2>
-          <p className="text-xs text-zinc-500 font-mono">
-            16 coordinated deterministic & quantitative agents communicating via typed event contracts
+          <p className="text-sm text-zinc-400 font-mono mt-1">
+            16 coordinated quantitative agents running continuous 24/7 background work loops
           </p>
         </div>
-        <span className="text-xs font-mono text-emerald-400 bg-emerald-950/60 border border-emerald-800/80 px-2.5 py-1 rounded">
-          {agents.filter((a) => a.status === 'ACTIVE').length} / {agents.length} Agents Active
-        </span>
+        <div className="flex items-center gap-3">
+          <span className={`text-sm md:text-base font-mono font-bold px-4 py-2 rounded-xl border flex items-center gap-2 ${
+            activeCount === agents.length
+              ? 'text-emerald-300 bg-emerald-950/80 border-emerald-600 shadow-[0_0_15px_rgba(16,185,129,0.3)]'
+              : 'text-amber-300 bg-amber-950/80 border-amber-600'
+          }`}>
+            <span className="h-3 w-3 rounded-full bg-emerald-400 animate-pulse" />
+            {activeCount} / {agents.length} AGENTS ACTIVE (24/7)
+          </span>
+        </div>
       </div>
 
       {/* Grid of 16 Agents */}
@@ -34,24 +43,24 @@ export const AgentCommandCenter: React.FC<AgentCommandCenterProps> = ({ agents }
             <div
               key={agent.name}
               onClick={() => setSelectedAgent(agent)}
-              className="bg-[#0e1417] border border-zinc-800 hover:border-zinc-700 rounded-xl p-4 transition cursor-pointer flex flex-col justify-between group"
+              className="bg-[#0e1417] border border-zinc-800 hover:border-emerald-500/60 rounded-2xl p-5 transition-all cursor-pointer flex flex-col justify-between group hover:shadow-[0_4px_20px_rgba(0,0,0,0.5)]"
             >
               <div>
-                <div className="flex items-center justify-between gap-2 mb-2">
+                <div className="flex items-center justify-between gap-2 mb-3">
                   <div className="flex items-center gap-2">
                     <div
-                      className={`h-2.5 w-2.5 rounded-full ${
-                        isActive ? 'bg-emerald-400 animate-pulse' : 'bg-zinc-600'
+                      className={`h-3 w-3 rounded-full ${
+                        isActive ? 'bg-emerald-400 animate-pulse shadow-[0_0_8px_#34d399]' : 'bg-zinc-600'
                       }`}
                     />
-                    <span className="font-mono text-[10px] text-zinc-400 font-semibold truncate">
+                    <span className="font-mono text-xs text-zinc-400 font-bold truncate">
                       {agent.name.split('-')[1]}
                     </span>
                   </div>
                   <span
-                    className={`font-mono text-[9px] px-1.5 py-0.5 rounded ${
+                    className={`font-mono text-xs font-bold px-2.5 py-1 rounded-md ${
                       isActive
-                        ? 'bg-emerald-950 text-emerald-300 border border-emerald-800'
+                        ? 'bg-emerald-950 text-emerald-300 border border-emerald-700'
                         : 'bg-zinc-800 text-zinc-400'
                     }`}
                   >
@@ -59,19 +68,19 @@ export const AgentCommandCenter: React.FC<AgentCommandCenterProps> = ({ agents }
                   </span>
                 </div>
 
-                <h4 className="text-sm font-bold text-white group-hover:text-emerald-300 transition mb-1">
+                <h4 className="text-base font-bold text-white group-hover:text-emerald-300 transition mb-2">
                   {agent.role}
                 </h4>
 
-                <p className="text-[11px] text-zinc-400 font-mono line-clamp-2 mb-3">
+                <p className="text-xs text-zinc-300 font-mono line-clamp-3 mb-4 leading-relaxed bg-zinc-950/60 p-2.5 rounded-lg border border-zinc-900">
                   {agent.recent_logs[agent.recent_logs.length - 1]?.summary ||
                     'Operational and awaiting signals'}
                 </p>
               </div>
 
-              <div className="pt-3 border-t border-zinc-800/60 flex items-center justify-between text-[10px] font-mono text-zinc-500">
-                <span>Decisions: {agent.decisions_count}</span>
-                <span className={agent.errors_count > 0 ? 'text-rose-400' : 'text-zinc-500'}>
+              <div className="pt-3 border-t border-zinc-800/80 flex items-center justify-between text-xs font-mono text-zinc-400 font-medium">
+                <span>Decisions: <strong className="text-white font-bold">{agent.decisions_count}</strong></span>
+                <span className={agent.errors_count > 0 ? 'text-rose-400 font-bold' : 'text-zinc-500'}>
                   Errors: {agent.errors_count}
                 </span>
               </div>
@@ -82,54 +91,54 @@ export const AgentCommandCenter: React.FC<AgentCommandCenterProps> = ({ agents }
 
       {/* Agent Detail Modal */}
       {selectedAgent && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-[#0e1417] border border-zinc-800 rounded-xl max-w-xl w-full p-6 shadow-2xl">
-            <div className="flex items-start justify-between gap-4 mb-4">
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-[#0e1417] border border-zinc-700 rounded-2xl max-w-2xl w-full p-7 shadow-2xl">
+            <div className="flex items-start justify-between gap-4 mb-5">
               <div>
-                <span className="font-mono text-xs text-emerald-400 font-semibold">
+                <span className="font-mono text-xs text-emerald-400 font-bold tracking-wide">
                   {selectedAgent.name}
                 </span>
-                <h3 className="text-lg font-bold text-white tracking-tight">
+                <h3 className="text-xl font-bold text-white tracking-tight mt-1">
                   {selectedAgent.role}
                 </h3>
               </div>
               <button
                 onClick={() => setSelectedAgent(null)}
-                className="text-zinc-500 hover:text-white font-mono text-xs"
+                className="text-zinc-400 hover:text-white font-mono text-sm px-3 py-1 bg-zinc-900 border border-zinc-700 rounded-lg hover:border-zinc-500 transition"
               >
                 [CLOSE]
               </button>
             </div>
 
-            <div className="bg-zinc-900/80 border border-zinc-800 rounded-lg p-3 font-mono text-xs space-y-2 mb-4">
-              <div className="flex justify-between text-zinc-400">
+            <div className="bg-zinc-900/90 border border-zinc-800 rounded-xl p-4 font-mono text-sm space-y-2.5 mb-5">
+              <div className="flex justify-between text-zinc-300">
                 <span>Total Decisions Executed:</span>
-                <span className="text-white font-bold">{selectedAgent.decisions_count}</span>
+                <span className="text-emerald-400 font-bold text-base">{selectedAgent.decisions_count}</span>
               </div>
-              <div className="flex justify-between text-zinc-400">
+              <div className="flex justify-between text-zinc-300">
                 <span>Total Exceptions / Errors:</span>
-                <span className={selectedAgent.errors_count > 0 ? 'text-rose-400' : 'text-emerald-400'}>
+                <span className={selectedAgent.errors_count > 0 ? 'text-rose-400 font-bold' : 'text-emerald-400 font-bold'}>
                   {selectedAgent.errors_count}
                 </span>
               </div>
-              <div className="flex justify-between text-zinc-400">
+              <div className="flex justify-between text-zinc-300">
                 <span>Last Telemetry Update:</span>
-                <span className="text-zinc-300">
+                <span className="text-white font-bold">
                   {new Date(selectedAgent.last_active_utc).toLocaleTimeString()}
                 </span>
               </div>
             </div>
 
-            <h5 className="font-mono text-xs font-bold text-zinc-400 uppercase tracking-wider mb-2">
-              Recent Decision Logs
+            <h5 className="font-mono text-sm font-bold text-zinc-300 uppercase tracking-wider mb-3">
+              Live Work Stream & Decisions
             </h5>
-            <div className="bg-black/50 border border-zinc-800/80 rounded-lg p-3 font-mono text-xs max-h-60 overflow-y-auto space-y-2">
+            <div className="bg-black/60 border border-zinc-800 rounded-xl p-4 font-mono text-xs max-h-72 overflow-y-auto space-y-2.5">
               {selectedAgent.recent_logs.map((logItem, idx) => (
-                <div key={idx} className="border-b border-zinc-900 pb-1.5 last:border-0">
-                  <span className="text-zinc-500 text-[10px]">
+                <div key={idx} className="border-b border-zinc-900 pb-2 last:border-0">
+                  <span className="text-emerald-500/80 font-semibold">
                     [{new Date(logItem.ts).toLocaleTimeString()}]
                   </span>{' '}
-                  <span className="text-zinc-300">{logItem.summary || logItem.error}</span>
+                  <span className="text-zinc-200">{logItem.summary || logItem.error}</span>
                 </div>
               ))}
             </div>
