@@ -1,0 +1,244 @@
+"""FastAPI web and streaming API for Betting Intelligence OS."""
+
+from __future__ import annotations
+
+import asyncio
+import json
+from collections.abc import AsyncGenerator
+from datetime import UTC, datetime
+from decimal import Decimal
+from typing import Any
+
+from fastapi import Depends, FastAPI, HTTPException, Request, Security, status
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse, StreamingResponse
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from pydantic import BaseModel
+from sqlalchemy import select
+
+from .agents import AgentSystem
+from .config import Settings, get_settings
+from .db import Database, MarketRecord, OrderRecord, RecommendationRecord
+from .events import EventBus
+from .money import D
+
+security_bearer = HTTPBearer(auto_error=False)
+
+
+def create_app(
+    agent_system: AgentSystem,
+    bus: EventBus,
+    db: Database,
+    settings: Settings | None = None,
+) -> FastAPI:
+    cfg = settings or get_settings()
+    app = FastAPI(
+        title="Betting Intelligence OS",
+        version="0.1.0",
+        description="Institutional-Grade Real-Time AI Prediction and Trading Intelligence Platform for Kalshi",
+    )
+
+    origins = [o.strip() for o in cfg.cors_origins.split(",") if o.strip()]
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=origins if origins else ["*"],
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+
+    def verify_admin(creds: HTTPAuthorizationCredentials = Security(security_bearer)) -> bool:
+        if not cfg.admin_token:
+            return True
+        if not creds or creds.credentials != cfg.admin_token.get_secret_value():
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid admin token")
+        return True
+
+    # ---------------------------------------------------------------- Endpoints
+
+    @app.get("/api/health")
+    async def get_health():
+        return {
+            "status": "online",
+            "utc_time": datetime.now(UTC).isoformat(),
+            "feeds": agent_system.health_registry.snapshot(),
+        }
+
+    @app.get("/api/settings")
+    async def get_public_settings():
+        return cfg.public_view()
+
+    @app.get("/api/best_trade")
+    async def get_best_live_trade():
+        """Prominently displays BEST LIVE TRADE RIGHT NOW or explains why NO QUALIFIED TRADE AVAILABLE."""
+        best = agent_system.cio.best_live_opportunity
+        if best and best.status == "active":
+            return {
+                "available": True,
+                "opportunity": best.payload,
+                "created_at": best.created_at.isoformat(),
+                "expires_at": best.expires_at.isoformat(),
+                "status": "LIVE",
+            }
+        else:
+            return {
+                "available": False,
+                "status": "NO QUALIFIED TRADE AVAILABLE",
+                "reason": agent_system.cio.no_trade_reason,
+                "checked_at": datetime.now(UTC).isoformat(),
+            }
+
+    @app.get("/api/opportunities")
+    async def get_opportunities():
+        """Leaderboard of active trade candidates ranked by conservative ROI."""
+        recs = [r.payload for r in agent_system.cio.active_recommendations.values() if r.status == "active"]
+        recs.sort(key=lambda r: float(r.get("net_roi", 0)), reverse=True)
+        return {"count": len(recs), "opportunities": recs}
+
+    @app.get("/api/markets")
+    async def get_markets(limit: int = 200, category: str | None = None):
+        """List tracked markets with executable prices."""
+        async with db.session() as s:
+            stmt = select(MarketRecord).limit(limit)
+            res = await s.execute(stmt)
+            markets = list(res.scalars().all())
+
+        out = []
+        for m in markets:
+            if category and m.category != category:
+                continue
+            book = agent_system.books.get(m.ticker)
+            snap = book.get_snapshot(max_age_sec=cfg.max_rest_book_age_sec) if book else None
+            out.append({
+                "ticker": m.ticker,
+                "title": m.title,
+                "yes_sub_title": m.yes_sub_title,
+                "category": m.category,
+                "status": m.status,
+                "close_time": m.close_time.isoformat() if m.close_time else None,
+                "yes_bid": str(snap.best_yes_bid) if snap and snap.best_yes_bid else None,
+                "yes_ask": str(snap.best_yes_ask) if snap and snap.best_yes_ask else None,
+                "spread": str(snap.spread) if snap and snap.spread else None,
+                "is_stale": snap.is_stale if snap else True,
+            })
+        return {"count": len(out), "markets": out}
+
+    @app.get("/api/market/{ticker}")
+    async def get_market_detail(ticker: str):
+        async with db.session() as s:
+            rec = await s.get(MarketRecord, ticker)
+            if not rec:
+                raise HTTPException(status_code=404, detail="Market not found")
+
+        book = agent_system.books.get(ticker)
+        snap = book.get_snapshot(max_age_sec=cfg.max_rest_book_age_sec) if book else None
+        forecast = agent_system.forecaster.latest_forecasts.get(ticker)
+
+        return {
+            "ticker": rec.ticker,
+            "title": rec.title,
+            "category": rec.category,
+            "status": rec.status,
+            "close_time": rec.close_time.isoformat() if rec.close_time else None,
+            "orderbook": {
+                "yes_bids": [(str(l.price), str(l.qty)) for l in (snap.yes_bids[:10] if snap else [])],
+                "yes_asks": [(str(l.price), str(l.qty)) for l in (snap.yes_asks[:10] if snap else [])],
+                "best_yes_bid": str(snap.best_yes_bid) if snap and snap.best_yes_bid else None,
+                "best_yes_ask": str(snap.best_yes_ask) if snap and snap.best_yes_ask else None,
+                "spread": str(snap.spread) if snap and snap.spread else None,
+                "is_stale": snap.is_stale if snap else True,
+            },
+            "forecast": {
+                "p_yes": forecast.p_yes,
+                "p_low": forecast.p_low,
+                "p_high": forecast.p_high,
+                "model": forecast.model,
+                "independence": forecast.independence,
+                "inputs": forecast.inputs,
+            } if forecast else None,
+        }
+
+    @app.get("/api/agents")
+    async def get_agents():
+        """Command Center status of all 16 specialized agents."""
+        return {"agents": agent_system.snapshot()}
+
+    @app.get("/api/portfolio")
+    async def get_portfolio():
+        """Bankroll, risk limits, open exposure, and P&L."""
+        mids = {}
+        for t, b in agent_system.books.items():
+            snap = b.get_snapshot()
+            if snap.mid_price:
+                mids[t] = snap.mid_price
+
+        # Update portfolio tracker
+        from .portfolio import PortfolioTracker
+        tracker = PortfolioTracker(db=db, settings=cfg)
+        await tracker.reload_positions()
+        return tracker.mark_to_market(mids)
+
+    @app.get("/api/calibration")
+    async def get_calibration():
+        """Model validation, Brier scores, and calibration statistics."""
+        return await agent_system.validation.run_calibration_audit()
+
+    @app.post("/api/orders")
+    async def place_order(
+        request: Request,
+        _auth: bool = Depends(verify_admin),
+    ):
+        body = await request.json()
+        ticker = body.get("ticker")
+        side = body.get("side")
+        contracts = Decimal(str(body.get("contracts", "1")))
+        limit_price = Decimal(str(body.get("limit_price", "0.50")))
+
+        if not ticker or side not in ("yes", "no"):
+            raise HTTPException(status_code=400, detail="Invalid order parameters")
+
+        order = await agent_system.execution.execute_order(
+            ticker=ticker,
+            side=side,
+            contracts=contracts,
+            limit_price=limit_price,
+            recommendation_id=body.get("recommendation_id"),
+        )
+        return {
+            "order_id": order.id,
+            "status": order.status,
+            "filled": order.filled,
+            "avg_fill_price": order.avg_fill_price,
+            "fees": order.fees,
+        }
+
+    @app.post("/api/kill_switch")
+    async def trigger_emergency_kill(
+        _auth: bool = Depends(verify_admin),
+    ):
+        agent_system.risk_manager.trigger_safety_halt("Emergency Kill Switch triggered by operator")
+        return {"status": "HALTED", "time": datetime.now(UTC).isoformat()}
+
+    @app.get("/api/stream")
+    async def sse_event_stream(request: Request):
+        """Server-Sent Events stream for real-time frontend terminal updates."""
+        q = bus.ui_subscribe()
+
+        async def generator() -> AsyncGenerator[str, None]:
+            try:
+                # Send initial ping
+                yield "event: connected\ndata: {}\n\n"
+                while True:
+                    if await request.is_disconnected():
+                        break
+                    try:
+                        ev = await asyncio.wait_for(q.get(), timeout=20.0)
+                        yield f"event: {ev['type']}\ndata: {json.dumps(ev)}\n\n"
+                    except asyncio.TimeoutError:
+                        yield "event: heartbeat\ndata: {}\n\n"
+            finally:
+                bus.ui_unsubscribe(q)
+
+        return StreamingResponse(generator(), media_type="text/event-stream")
+
+    return app
