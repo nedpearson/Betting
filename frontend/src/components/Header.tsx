@@ -36,9 +36,17 @@ export const Header: React.FC<HeaderProps> = ({
 }) => {
   const healthyFeeds = feeds.filter((f) => f.state === 'CONNECTED' || f.state === 'DEGRADED').length;
   const totalFeeds = feeds.length || 6;
-  const availableCash = portfolio ? parseFloat(portfolio.available_cash).toFixed(2) : '500.00';
+  const availableCash = portfolio ? parseFloat(portfolio.available_cash).toFixed(2) : '--.--';
 
   const [uiScale, setUiScale] = useState<'normal' | 'large' | 'xlarge' | 'jumbo'>('large');
+  const [liveClock, setLiveClock] = useState<string>(new Date().toISOString().slice(11, 19));
+
+  useEffect(() => {
+    const clockInterval = setInterval(() => {
+      setLiveClock(new Date().toISOString().slice(11, 19));
+    }, 1000);
+    return () => clearInterval(clockInterval);
+  }, []);
 
   useEffect(() => {
     const saved = localStorage.getItem('boi_ui_scale') as any;
@@ -61,8 +69,10 @@ export const Header: React.FC<HeaderProps> = ({
         <div className="flex items-center gap-3 sm:gap-4">
           <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/30">
             <div className="h-2.5 w-2.5 rounded-full bg-emerald-400 animate-pulse" />
-            <span className="font-mono text-xs font-black text-emerald-400 uppercase tracking-wider">
-              LIVE
+            <span className="font-mono text-xs font-black text-emerald-400 uppercase tracking-wider flex items-center gap-1.5">
+              <span>LIVE</span>
+              <span className="text-zinc-500 text-[10px]">•</span>
+              <span className="text-zinc-300 font-mono text-[11px] font-bold">{liveClock} UTC</span>
             </span>
           </div>
 

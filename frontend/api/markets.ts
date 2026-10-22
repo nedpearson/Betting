@@ -1,19 +1,25 @@
 import { tryProxyToBackend } from './_backend.js';
 
 export default async function handler(req: any, res: any) {
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0');
+  res.setHeader('Surrogate-Control', 'no-store');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Expires', '0');
+
   const category = req.query?.category;
 
   // 1. Try authoritative Python backend
   const backendQuery = category ? `/api/markets?category=${encodeURIComponent(category)}` : '/api/markets';
   const backendRes = await tryProxyToBackend(backendQuery);
   if (backendRes.proxied && backendRes.data) {
-    res.setHeader('Cache-Control', 's-maxage=5, stale-while-revalidate=15');
     return res.status(200).json(backendRes.data);
   }
 
   // 2. Authoritative live Kalshi market discovery
   try {
-    const kRes = await fetch('https://api.elections.kalshi.com/trade-api/v2/markets?status=open&limit=100&mve_filter=exclude');
+    const kRes = await fetch('https://api.elections.kalshi.com/trade-api/v2/markets?status=open&limit=100&mve_filter=exclude', {
+      cache: 'no-store',
+    });
     if (kRes.ok) {
       const data = await kRes.json();
       const rawMarkets = data.markets || [];
@@ -46,7 +52,6 @@ export default async function handler(req: any, res: any) {
         );
       }
 
-      res.setHeader('Cache-Control', 's-maxage=5, stale-while-revalidate=15');
       return res.status(200).json({
         count: formatted.length,
         markets: formatted,
@@ -56,6 +61,5 @@ export default async function handler(req: any, res: any) {
     console.error('Error fetching markets from Kalshi', e);
   }
 
-  res.setHeader('Cache-Control', 's-maxage=5, stale-while-revalidate=15');
   return res.status(200).json({ count: 0, markets: [] });
 }

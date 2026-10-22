@@ -1,6 +1,10 @@
 import { getKalshiCredentials, kalshiRequest } from '../_kalshi.js';
 
 export default async function handler(req: any, res: any) {
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0');
+  res.setHeader('Surrogate-Control', 'no-store');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Expires', '0');
   if (req.method === 'GET') {
     const creds = getKalshiCredentials(req);
     if (!creds) {

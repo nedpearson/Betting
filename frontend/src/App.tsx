@@ -154,7 +154,7 @@ export const App: React.FC = () => {
 
   useEffect(() => {
     refreshAll();
-    const interval = setInterval(refreshAll, 6000);
+    const interval = setInterval(refreshAll, 2000);
 
     const unsubscribe = subscribeEventStream((eventType, data) => {
       if (eventType === 'recommendation.issued') {

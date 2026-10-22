@@ -20,10 +20,14 @@ const AGENT_DEFINITIONS = [
 ];
 
 export default async function handler(req: any, res: any) {
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0');
+  res.setHeader('Surrogate-Control', 'no-store');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Expires', '0');
+
   // 1. Try authoritative Python backend
   const backendRes = await tryProxyToBackend('/api/agents');
   if (backendRes.proxied && backendRes.data) {
-    res.setHeader('Cache-Control', 's-maxage=2, stale-while-revalidate=5');
     return res.status(200).json(backendRes.data);
   }
 
@@ -44,6 +48,5 @@ export default async function handler(req: any, res: any) {
     ],
   }));
 
-  res.setHeader('Cache-Control', 's-maxage=5, stale-while-revalidate=10');
   return res.status(200).json({ count: agents.length, agents });
 }

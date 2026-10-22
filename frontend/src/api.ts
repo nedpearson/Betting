@@ -10,58 +10,71 @@ import type {
 
 const BASE = '';
 
+async function fetchNoCache(url: string, init?: RequestInit): Promise<Response> {
+  return fetch(url, {
+    ...init,
+    cache: 'no-store',
+    headers: {
+      'Cache-Control': 'no-cache, no-store, must-revalidate',
+      'Pragma': 'no-cache',
+      ...(init?.headers || {}),
+    },
+  });
+}
+
 export async function fetchBestTrade(): Promise<BestTradeResponse> {
-  const res = await fetch(`${BASE}/api/best_trade`);
+  const res = await fetchNoCache(`${BASE}/api/best_trade?_t=${Date.now()}`);
   return res.json();
 }
 
 export async function fetchOpportunities(): Promise<Opportunity[]> {
-  const res = await fetch(`${BASE}/api/opportunities`);
+  const res = await fetchNoCache(`${BASE}/api/opportunities?_t=${Date.now()}`);
   const data = await res.json();
   return data.opportunities || [];
 }
 
 export async function fetchMarkets(category?: string): Promise<Market[]> {
-  const url = category ? `${BASE}/api/markets?category=${encodeURIComponent(category)}` : `${BASE}/api/markets`;
-  const res = await fetch(url);
+  const query = category ? `category=${encodeURIComponent(category)}&_t=${Date.now()}` : `_t=${Date.now()}`;
+  const url = `${BASE}/api/markets?${query}`;
+  const res = await fetchNoCache(url);
   const data = await res.json();
   return data.markets || [];
 }
 
 export async function fetchMarketDetail(ticker: string): Promise<any> {
-  const res = await fetch(`${BASE}/api/market/${encodeURIComponent(ticker)}`);
+  const res = await fetchNoCache(`${BASE}/api/market/${encodeURIComponent(ticker)}?_t=${Date.now()}`);
   return res.json();
 }
 
 export async function fetchAgents(): Promise<AgentSnapshot[]> {
-  const res = await fetch(`${BASE}/api/agents`);
+  const res = await fetchNoCache(`${BASE}/api/agents?_t=${Date.now()}`);
   const data = await res.json();
   return data.agents || [];
 }
 
 export async function fetchPortfolio(): Promise<PortfolioSummary> {
-  const res = await fetch(`${BASE}/api/portfolio`);
+  const res = await fetchNoCache(`${BASE}/api/portfolio?_t=${Date.now()}`);
   return res.json();
 }
 
 export async function fetchHealth(): Promise<FeedHealth[]> {
-  const res = await fetch(`${BASE}/api/health`);
+  const res = await fetchNoCache(`${BASE}/api/health?_t=${Date.now()}`);
   const data = await res.json();
   return data.feeds || [];
 }
 
 export async function fetchCalibration(): Promise<CalibrationReport> {
-  const res = await fetch(`${BASE}/api/calibration`);
+  const res = await fetchNoCache(`${BASE}/api/calibration?_t=${Date.now()}`);
   return res.json();
 }
 
 export async function fetchSettings(): Promise<any> {
-  const res = await fetch(`${BASE}/api/settings`);
+  const res = await fetchNoCache(`${BASE}/api/settings?_t=${Date.now()}`);
   return res.json();
 }
 
 export async function triggerKillSwitch(): Promise<any> {
-  const res = await fetch(`${BASE}/api/kill_switch`, { method: 'POST' });
+  const res = await fetchNoCache(`${BASE}/api/kill_switch`, { method: 'POST' });
   return res.json();
 }
 
@@ -72,7 +85,7 @@ export async function placeOrder(
   limitPrice: number,
   recommendationId?: string
 ): Promise<any> {
-  const res = await fetch(`${BASE}/api/orders`, {
+  const res = await fetchNoCache(`${BASE}/api/orders`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
