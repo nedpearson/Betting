@@ -1,5 +1,5 @@
-import { tryProxyToBackend } from './_backend';
-import { evaluateLiveMarkets } from './_eval';
+import { tryProxyToBackend } from './_backend.js';
+import { evaluateLiveMarkets } from './_eval.js';
 
 export default async function handler(req: any, res: any) {
   res.setHeader('Cache-Control', 's-maxage=2, stale-while-revalidate=5');

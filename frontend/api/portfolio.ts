@@ -1,5 +1,5 @@
-import { tryProxyToBackend } from './_backend';
-import { getKalshiCredentials, kalshiRequest } from './_kalshi';
+import { tryProxyToBackend } from './_backend.js';
+import { getKalshiCredentials, kalshiRequest } from './_kalshi.js';
 
 export default async function handler(req: any, res: any) {
   res.setHeader('Cache-Control', 's-maxage=2, stale-while-revalidate=5');

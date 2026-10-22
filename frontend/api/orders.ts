@@ -1,6 +1,5 @@
-import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { tryProxyToBackend } from './_backend';
-import { getKalshiCredentials, kalshiRequest } from './_kalshi';
+import { tryProxyToBackend } from './_backend.js';
+import { getKalshiCredentials, kalshiRequest } from './_kalshi.js';
 import crypto from 'crypto';
 
 export default async function handler(req: any, res: any) {

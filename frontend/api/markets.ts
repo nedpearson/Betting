@@ -1,4 +1,4 @@
-import { tryProxyToBackend } from './_backend';
+import { tryProxyToBackend } from './_backend.js';
 
 export default async function handler(req: any, res: any) {
   const category = req.query?.category;

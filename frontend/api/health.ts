@@ -1,4 +1,4 @@
-import { tryProxyToBackend } from './_backend';
+import { tryProxyToBackend } from './_backend.js';
 
 interface PingResult {
   ok: boolean;

@@ -1,4 +1,4 @@
-import { tryProxyToBackend } from './_backend';
+import { tryProxyToBackend } from './_backend.js';
 
 const AGENT_DEFINITIONS = [
   { name: 'Agent-01-MarketDiscovery', role: 'Market Discovery & Universe Selection' },

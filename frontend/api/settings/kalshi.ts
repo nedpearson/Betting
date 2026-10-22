@@ -1,4 +1,4 @@
-import { getKalshiCredentials, kalshiRequest } from '../_kalshi';
+import { getKalshiCredentials, kalshiRequest } from '../_kalshi.js';
 
 export default async function handler(req: any, res: any) {
   if (req.method === 'GET') {

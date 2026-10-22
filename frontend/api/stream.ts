@@ -1,4 +1,4 @@
-import { BACKEND_URL } from './_backend';
+import { BACKEND_URL } from './_backend.js';
 
 export default async function handler(req: any, res: any) {
   res.writeHead(200, {
