@@ -24,6 +24,7 @@ interface TradeDrawerProps {
   initialSide?: 'yes' | 'no';
   initialContracts?: number;
   initialPrice?: number;
+  availableCash?: string | number;
 }
 
 export const TradeDrawer: React.FC<TradeDrawerProps> = ({
@@ -35,6 +36,7 @@ export const TradeDrawer: React.FC<TradeDrawerProps> = ({
   initialSide = 'yes',
   initialContracts = 10,
   initialPrice,
+  availableCash = '0.00',
 }) => {
   const [side, setSide] = useState<'yes' | 'no'>(initialSide);
   const [contracts, setContracts] = useState<number>(initialContracts);
@@ -222,14 +224,16 @@ export const TradeDrawer: React.FC<TradeDrawerProps> = ({
                   ${amt}
                 </button>
               ))}
-              <button
-                type="button"
-                onClick={() => handleDollarChange('82.38')}
-                className="px-3 py-1.5 rounded-xl border border-emerald-500/50 bg-emerald-500/10 hover:bg-emerald-500/20 text-xs font-mono font-bold text-emerald-400 transition active:scale-95 ml-auto cursor-pointer"
-                title="Use full available cash balance ($82.38)"
-              >
-                Max Cash ($82.38)
-              </button>
+              {parseFloat(String(availableCash || '0')) > 0 && (
+                <button
+                  type="button"
+                  onClick={() => handleDollarChange(parseFloat(String(availableCash)).toFixed(2))}
+                  className="px-3 py-1.5 rounded-xl border border-emerald-500/50 bg-emerald-500/10 hover:bg-emerald-500/20 text-xs font-mono font-bold text-emerald-400 transition active:scale-95 ml-auto cursor-pointer"
+                  title={`Use full available cash balance ($${parseFloat(String(availableCash)).toFixed(2)})`}
+                >
+                  Max Cash (${parseFloat(String(availableCash)).toFixed(2)})
+                </button>
+              )}
             </div>
           </div>
 

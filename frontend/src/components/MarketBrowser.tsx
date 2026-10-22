@@ -20,11 +20,13 @@ import { TradeDrawer } from './TradeDrawer';
 interface MarketBrowserProps {
   markets: Market[];
   onExecuteTrade?: (ticker: string, side: 'yes' | 'no', contracts: number, price: number) => void;
+  availableCash?: string | number;
 }
 
 export const MarketBrowser: React.FC<MarketBrowserProps> = ({ 
   markets,
   onExecuteTrade,
+  availableCash,
 }) => {
   const [search, setSearch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
@@ -284,6 +286,7 @@ export const MarketBrowser: React.FC<MarketBrowserProps> = ({
         market={tradeDrawerMarket}
         isOpen={Boolean(tradeDrawerMarket)}
         onClose={() => setTradeDrawerMarket(null)}
+        availableCash={availableCash}
         onExecute={(t, s, c, p) => {
           if (onExecuteTrade) onExecuteTrade(t, s, c, p);
           setTradeDrawerMarket(null);

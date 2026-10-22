@@ -266,6 +266,7 @@ export const App: React.FC = () => {
         initialSide={tradeDefaults.side}
         initialContracts={tradeDefaults.contracts}
         initialPrice={tradeDefaults.price}
+        availableCash={portfolio?.available_cash}
       />
 
       {/* Mobile Bottom Navigation Bar */}
@@ -453,6 +454,7 @@ export const App: React.FC = () => {
           <MarketBrowser 
             markets={markets} 
             onExecuteTrade={handleOpenTradeDrawer}
+            availableCash={portfolio?.available_cash}
           />
         )}
 
