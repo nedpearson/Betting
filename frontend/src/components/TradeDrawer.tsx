@@ -48,13 +48,11 @@ export const TradeDrawer: React.FC<TradeDrawerProps> = ({
       const s = initialSide || 'yes';
       setSide(s);
 
-      let p = initialPrice && initialPrice > 0 ? initialPrice : 0.50;
-      if (!initialPrice) {
-        if (s === 'yes' && market.yes_ask) {
-          p = parseFloat(market.yes_ask);
-        } else if (s === 'no' && market.yes_bid) {
-          p = parseFloat((1.0 - parseFloat(market.yes_bid)).toFixed(2));
-        }
+      let p = 0.50;
+      if (s === 'yes') {
+        p = market.yes_ask ? parseFloat(market.yes_ask) : (initialPrice || 0.50);
+      } else if (s === 'no') {
+        p = market.yes_bid ? parseFloat((1.0 - parseFloat(market.yes_bid)).toFixed(2)) : (initialPrice || 0.50);
       }
       p = Math.max(0.01, Math.min(0.99, parseFloat(p.toFixed(2))));
       setPrice(p);

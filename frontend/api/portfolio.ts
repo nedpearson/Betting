@@ -84,7 +84,7 @@ export default async function handler(req: any, res: any) {
     totalFees += fees;
     totalRealized += realized;
 
-    const contractsNum = posFp >= 100 ? (posFp / 100) : posFp;
+    const contractsNum = posFp;
     const avgEntry = contractsNum > 0 ? (exposure / contractsNum) : 0;
     const maxPayout = contractsNum * 1.0;
     const potentialProfit = Math.max(0, maxPayout - exposure);
@@ -109,7 +109,7 @@ export default async function handler(req: any, res: any) {
   const rawOrders = ordersRes.data?.orders || [];
   const orders = rawOrders.map((o: any) => {
     const countFp = parseFloat(o.count_fp || o.remaining_count_fp || '0');
-    const count = countFp >= 100 ? (countFp / 100) : countFp;
+    const count = countFp;
     const priceDollars = parseFloat(o.yes_price_dollars || (o.yes_price ? (o.yes_price / 100).toFixed(4) : (o.price || '0')));
     return {
       order_id: o.order_id,
@@ -130,7 +130,7 @@ export default async function handler(req: any, res: any) {
   const rawFills = fillsRes.data?.fills || [];
   const recentFills = rawFills.map((f: any) => {
     const countFp = parseFloat(f.count_fp || '0');
-    const count = countFp >= 100 ? (countFp / 100) : countFp;
+    const count = countFp;
     const priceDollars = parseFloat(f.yes_price_dollars || (f.yes_price ? (f.yes_price / 100).toFixed(4) : '0'));
     const feeDollars = parseFloat(f.fee_cost || '0');
     return {

@@ -122,7 +122,7 @@ export const BestTradeCard: React.FC<BestTradeCardProps> = ({
   }
 
   const contracts = parseInt(opp.recommended_contracts) || 1;
-  const entryPrice = parseFloat(opp.max_entry_price || opp.entry_price || '0.50');
+  const entryPrice = parseFloat(opp.entry_price || opp.max_entry_price || '0.50');
   const stakeCost = opp.recommended_stake 
     ? parseFloat(opp.recommended_stake).toFixed(2)
     : (contracts * entryPrice).toFixed(2);
