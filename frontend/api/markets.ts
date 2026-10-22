@@ -78,67 +78,54 @@ function inferCategory(ticker: string, title?: string): string {
   return 'General';
 }
 
-const TARGET_SERIES = [
-  // Climate and Weather (Highs & Lows)
-  'KXHIGHDEN', 'KXHIGHMIA', 'KXHIGHCHI', 'KXHIGHNY', 'KXHIGHLAX', 'KXHIGHAUS',
-  'KXLOWDEN', 'KXLOWCHI', 'KXLOWMIA',
-  // Digital Assets / Crypto
-  'KXBTC', 'KXETH', 'KXDOGE', 'KXXRP',
-  // Sports (NFL, NBA, NHL, MLB)
-  'KXNFLGAME', 'KXNBAGAME', 'KXNHLGAME', 'KXMLBGAME',
-  // Macroeconomics & Interest Rates
-  'KXFED', 'KXCPI', 'KXPAYROLLS', 'KXINX', 'KXGDP', 'KX30YMORTW', 'KX2YRRATE15M'
+const TARGET_CHUNKS = [
+  // Chunk 1: Climate & Weather Core Cities
+  ['KXHIGHDEN', 'KXHIGHMIA', 'KXHIGHCHI', 'KXHIGHNY'],
+  // Chunk 2: Digital Assets / Crypto
+  ['KXBTC', 'KXETH', 'KXDOGE', 'KXXRP'],
+  // Chunk 3: Major Sports (NFL, NBA, NHL, MLB)
+  ['KXNFLGAME', 'KXNBAGAME', 'KXNHLGAME', 'KXMLBGAME'],
+  // Chunk 4: Macroeconomics & Federal Reserve Rates
+  ['KXFED', 'KXCPI', 'KXPAYROLLS', 'KXINX'],
+  // Chunk 5: Secondary Weather & Macro Indicators
+  ['KXHIGHAUS', 'KXHIGHLAX', 'KXGDP', 'KX30YMORTW']
 ];
 
 async function fetchLiveKalshiMarkets(): Promise<any[]> {
   const now = Date.now();
-  if (marketsCache && now - marketsCache.ts < 30000 && marketsCache.markets.length > 0) {
+  if (marketsCache && now - marketsCache.ts < 45000 && marketsCache.markets.length > 200) {
     return marketsCache.markets;
   }
 
   const allRawMarkets: any[] = [];
   const seenTickers = new Set<string>();
 
-  // Fetch in parallel across target series and open markets
-  const promises = TARGET_SERIES.map(async (series) => {
-    try {
-      const res = await fetch(
-        `https://api.elections.kalshi.com/trade-api/v2/markets?series_ticker=${series}&status=open&limit=30`,
-        { cache: 'no-store' }
-      );
-      if (res.ok) {
-        const json = await res.json();
-        return json.markets || [];
-      }
-    } catch {
-      return [];
-    }
-    return [];
-  });
+  // Fetch in controlled chunks of 4 series to stay strictly within Kalshi rate-limits
+  for (const chunk of TARGET_CHUNKS) {
+    const chunkResults = await Promise.all(
+      chunk.map(async (series) => {
+        try {
+          const res = await fetch(
+            `https://api.elections.kalshi.com/trade-api/v2/markets?series_ticker=${series}&status=open&limit=30`,
+            { cache: 'no-store' }
+          );
+          if (res.ok) {
+            const json = await res.json();
+            return json.markets || [];
+          }
+        } catch {
+          return [];
+        }
+        return [];
+      })
+    );
 
-  // Also query open markets
-  const generalPromise = (async () => {
-    try {
-      const res = await fetch(
-        'https://api.elections.kalshi.com/trade-api/v2/markets?status=open&limit=100&mve_filter=exclude',
-        { cache: 'no-store' }
-      );
-      if (res.ok) {
-        const json = await res.json();
-        return json.markets || [];
-      }
-    } catch {
-      return [];
-    }
-    return [];
-  })();
-
-  const results = await Promise.all([...promises, generalPromise]);
-  for (const list of results) {
-    for (const m of list) {
-      if (!seenTickers.has(m.ticker)) {
-        seenTickers.add(m.ticker);
-        allRawMarkets.push(m);
+    for (const list of chunkResults) {
+      for (const m of list) {
+        if (!seenTickers.has(m.ticker)) {
+          seenTickers.add(m.ticker);
+          allRawMarkets.push(m);
+        }
       }
     }
   }
@@ -167,8 +154,10 @@ async function fetchLiveKalshiMarkets(): Promise<any[]> {
     };
   });
 
-  marketsCache = { ts: now, markets: formatted };
-  return formatted;
+  if (formatted.length >= 100 || !marketsCache) {
+    marketsCache = { ts: now, markets: formatted };
+  }
+  return formatted.length >= 100 ? formatted : (marketsCache?.markets || formatted);
 }
 
 export default async function handler(req: any, res: any) {
