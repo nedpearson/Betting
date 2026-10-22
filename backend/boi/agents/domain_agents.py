@@ -47,35 +47,10 @@ class SportsIntelligenceAgent(BaseAgent):
             self._task = None
 
     async def _poll_loop(self) -> None:
-        # Seed initial marquee games if empty
-        if not self.engine.active_games:
-            self.engine.update_game_state(
-                game_id="KXNHLGAME-26OCT28NJCOL",
-                sport="NHL",
-                home_team="New Jersey Devils",
-                away_team="Colorado Avalanche",
-                home_score=3,
-                away_score=2,
-                period=3,
-                clock_remaining=420.0,
-                is_live=True,
-                is_final=False,
-            )
-            self.engine.update_game_state(
-                game_id="KXNBAGAME-26OCT28BOSMIA",
-                sport="NBA",
-                home_team="Boston Celtics",
-                away_team="Miami Heat",
-                home_score=94,
-                away_score=89,
-                period=4,
-                clock_remaining=310.0,
-                is_live=True,
-                is_final=False,
-            )
-
         while self._running:
             self.mark_active()
+            if not self.engine.active_games:
+                self.record_decision("Sports Live Feed active: awaiting live in-game match data from exchange/radar")
             for gid, game in list(self.engine.active_games.items()):
                 # Tick down clock slightly if live
                 if game.is_live and game.clock_seconds_remaining > 30:

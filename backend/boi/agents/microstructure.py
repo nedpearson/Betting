@@ -100,35 +100,29 @@ class MarketMicrostructureAgent(BaseAgent):
                 rejection_reason="Order book data is stale or disconnected",
             )
 
-        # Check spread
-        if snap.spread is None:
-            return MicrostructureAssessment(
-                ticker=ticker,
-                is_liquid=False,
-                spread=None,
-                yes_top_depth=ZERO,
-                no_top_depth=ZERO,
-                imbalance=0.0,
-                adverse_selection_risk="HIGH",
-                rejection_reason="One-sided market (no executable two-way spread)",
-            )
+        # Check two-way spread when both sides have resting orders
+        if snap.best_yes_bid is not None and snap.best_yes_ask is not None:
+            bid_ask_spread = snap.best_yes_ask - snap.best_yes_bid
+            if bid_ask_spread > self.settings.max_spread:
+                return MicrostructureAssessment(
+                    ticker=ticker,
+                    is_liquid=False,
+                    spread=bid_ask_spread,
+                    yes_top_depth=ZERO,
+                    no_top_depth=ZERO,
+                    imbalance=0.0,
+                    adverse_selection_risk="HIGH",
+                    rejection_reason=f"Two-way spread {bid_ask_spread} exceeds max tolerance {self.settings.max_spread}",
+                )
 
-        if snap.spread > self.settings.max_spread:
-            return MicrostructureAssessment(
-                ticker=ticker,
-                is_liquid=False,
-                spread=snap.spread,
-                yes_top_depth=ZERO,
-                no_top_depth=ZERO,
-                imbalance=0.0,
-                adverse_selection_risk="HIGH",
-                rejection_reason=f"Spread {snap.spread} exceeds max tolerance {self.settings.max_spread}",
-            )
+        # Check executable ask depth
+        yes_ask_depth = snap.yes_asks[0].qty if snap.yes_asks else ZERO
+        no_ask_depth = snap.no_asks[0].qty if snap.no_asks else ZERO
+        yes_depth = yes_ask_depth if yes_ask_depth > ZERO else (snap.yes_bids[0].qty if snap.yes_bids else ZERO)
+        no_depth = no_ask_depth if no_ask_depth > ZERO else (snap.no_bids[0].qty if snap.no_bids else ZERO)
 
-        yes_depth = snap.yes_bids[0].qty if snap.yes_bids else ZERO
-        no_depth = snap.no_bids[0].qty if snap.no_bids else ZERO
-
-        if yes_depth < self.settings.min_top_depth or no_depth < self.settings.min_top_depth:
+        # Market is executable if at least one side has resting liquidity
+        if yes_ask_depth < self.settings.min_top_depth and no_ask_depth < self.settings.min_top_depth:
             return MicrostructureAssessment(
                 ticker=ticker,
                 is_liquid=False,
@@ -136,8 +130,8 @@ class MarketMicrostructureAgent(BaseAgent):
                 yes_top_depth=yes_depth,
                 no_top_depth=no_depth,
                 imbalance=0.0,
-                adverse_selection_risk="MEDIUM",
-                rejection_reason=f"Depth ({yes_depth}/{no_depth}) below minimum {self.settings.min_top_depth}",
+                adverse_selection_risk="HIGH",
+                rejection_reason=f"Insufficient executable depth ({yes_ask_depth} YES / {no_ask_depth} NO) below minimum {self.settings.min_top_depth}",
             )
 
         # Calculate imbalance: (Yes - No) / (Yes + No)

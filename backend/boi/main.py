@@ -127,7 +127,7 @@ async def run_scan_cli(settings: Settings | None = None) -> None:
             print(f"  Entry Price: ${p['entry_price']} | Max Entry: ${p['max_entry_price']}")
             print(f"  Estimated Probability: {float(p['estimated_probability']):.1%} (Cons: {float(p['conservative_probability']):.1%})")
             print(f"  Market Probability: {float(p['market_probability']):.1%}" if p.get('market_probability') else "  Market Probability: N/A")
-            print(f"  Conservative Edge: {float(p['conservative_edge']):+$0.4f}/contract")
+            print(f"  Conservative Edge: +${float(p['conservative_edge']):0.4f}/contract")
             print(f"  Net Expected ROI: {float(p['net_roi']):.1%}")
             print(f"  Recommended Stake: ${float(p['recommended_stake']):0.2f} ({p['recommended_contracts']} contracts)")
             print(f"  Max Loss: ${p['max_loss']} | Max Profit: ${p['max_profit']}")

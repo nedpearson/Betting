@@ -66,8 +66,8 @@ class LiveMarketMonitorAgent(BaseAgent):
         try:
             raw = await self.rest.get_market_orderbook(ticker, depth=30)
             ob = raw.get("orderbook", {}) or raw.get("orderbook_fp", {})
-            yes_raw = ob.get("yes_dollars_fp", []) or ob.get("yes", [])
-            no_raw = ob.get("no_dollars_fp", []) or ob.get("no", [])
+            yes_raw = ob.get("yes_dollars", []) or ob.get("yes_dollars_fp", []) or ob.get("yes", [])
+            no_raw = ob.get("no_dollars", []) or ob.get("no_dollars_fp", []) or ob.get("no", [])
             book.apply_snapshot(
                 yes_bids_raw=yes_raw,
                 no_bids_raw=no_raw,

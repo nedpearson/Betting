@@ -353,8 +353,8 @@ class KalshiWsClient:
             return
 
         if msg_type == "orderbook_snapshot":
-            yes_raw = msg.get("yes_dollars_fp", []) or msg.get("yes", [])
-            no_raw = msg.get("no_dollars_fp", []) or msg.get("no", [])
+            yes_raw = msg.get("yes_dollars", []) or msg.get("yes_dollars_fp", []) or msg.get("yes", [])
+            no_raw = msg.get("no_dollars", []) or msg.get("no_dollars_fp", []) or msg.get("no", [])
             book.apply_snapshot(
                 yes_bids_raw=yes_raw,
                 no_bids_raw=no_raw,

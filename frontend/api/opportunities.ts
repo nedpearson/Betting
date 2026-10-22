@@ -7,9 +7,9 @@ export default async function handler(req: any, res: any) {
   res.setHeader('Pragma', 'no-cache');
   res.setHeader('Expires', '0');
 
-  // 1. Try authoritative Python backend if connected
+  // 1. Try authoritative Python backend if connected and has active candidates
   const backendRes = await tryProxyToBackend('/api/opportunities');
-  if (backendRes.proxied && backendRes.data) {
+  if (backendRes.proxied && backendRes.data && backendRes.data.count > 0) {
     return res.status(200).json(backendRes.data);
   }
 

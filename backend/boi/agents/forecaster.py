@@ -242,17 +242,43 @@ class QuantitativeForecastingAgent(BaseAgent):
         )
 
     async def _forecast_sports(self, market: MarketRecord, p_market: float | None) -> ForecastRecord | None:
-        # Sports in-game margin model
         game_id = market.event_ticker
-        probs = self.sports.calculate_win_prob(game_id=game_id, pregame_spread_home=0.0)
-        if not probs:
+        game = self.sports.active_games.get(game_id)
+        if not game:
             if p_market is None:
                 return None
             p_point = p_market
-            p_low = max(0.01, p_point - 0.04)
-            p_high = min(0.99, p_point + 0.04)
+            p_low = max(0.01, p_point - 0.03)
+            p_high = min(0.99, p_point + 0.03)
         else:
-            p_point, p_low, p_high = probs
+            probs = self.sports.calculate_win_prob(game_id=game_id, pregame_spread_home=0.0)
+            if not probs:
+                if p_market is None:
+                    return None
+                p_point = p_market
+                p_low = max(0.01, p_point - 0.03)
+                p_high = min(0.99, p_point + 0.03)
+            else:
+                p_home, p_low_h, p_high_h = probs
+                # Determine whether market ticker targets home team or away team
+                # E.g. ticker KXNHLGAME-26OCT28NJCOL-COL targets away team COL
+                ticker_suffix = market.ticker.rsplit("-", 1)[-1].upper() if "-" in market.ticker else ""
+                is_away = False
+                if ticker_suffix:
+                    # check against away team abbreviations or words
+                    for word in game.away_team.upper().split():
+                        if ticker_suffix in word or word.startswith(ticker_suffix):
+                            is_away = True
+                            break
+
+                if is_away:
+                    p_point = 1.0 - p_home
+                    p_low = 1.0 - p_high_h
+                    p_high = 1.0 - p_low_h
+                else:
+                    p_point = p_home
+                    p_low = p_low_h
+                    p_high = p_high_h
 
         return ForecastRecord(
             id=str(uuid.uuid4()),

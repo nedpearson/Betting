@@ -61,7 +61,7 @@ class MarketDiscoveryAgent(BaseAgent):
         try:
             # 1. Fetch targeted high-volume liquid series
             target_series = [
-                "KXHIGHNY", "KXHIGHDEN", "KXHIGHCHI", "KXHIGHMIA",
+                "KXHIGHAUS", "KXHIGHLAX", "KXHIGHNY", "KXHIGHDEN", "KXHIGHCHI", "KXHIGHMIA",
                 "KXBTC", "KXETH", "KXNHLGAME", "KXNBASPREAD", "KXNBA"
             ]
             raw_markets: list[dict] = []
@@ -108,18 +108,20 @@ class MarketDiscoveryAgent(BaseAgent):
                 no_bid = m.get("no_bid_dollars")
                 yes_ask = m.get("yes_ask_dollars")
                 no_ask = m.get("no_ask_dollars")
-                yes_size = m.get("yes_bid_size_fp") or "25.0"
-                no_size = m.get("no_bid_size_fp") or "25.0"
+                yes_bid_size = m.get("yes_bid_size_fp") or "25.0"
+                no_bid_size = m.get("no_bid_size_fp") or "25.0"
+                yes_ask_size = m.get("yes_ask_size_fp") or "25.0"
+                no_ask_size = m.get("no_ask_size_fp") or "25.0"
 
-                yes_bids = [[yes_bid, yes_size]] if yes_bid and float(yes_bid) > 0 else []
-                no_bids = [[no_bid, no_size]] if no_bid and float(no_bid) > 0 else []
+                yes_bids = [[yes_bid, yes_bid_size]] if yes_bid and float(yes_bid) > 0 else []
+                no_bids = [[no_bid, no_bid_size]] if no_bid and float(no_bid) > 0 else []
 
-                # If no_ask is present, derive yes_bid complement
+                # If no_ask is present, derive yes_bid complement with no_ask_size
                 if not yes_bids and no_ask and float(no_ask) < 1.0:
-                    yes_bids = [[str(round(1.0 - float(no_ask), 4)), no_size]]
-                # If yes_ask is present, derive no_bid complement
+                    yes_bids = [[str(round(1.0 - float(no_ask), 4)), no_ask_size]]
+                # If yes_ask is present, derive no_bid complement with yes_ask_size
                 if not no_bids and yes_ask and float(yes_ask) < 1.0:
-                    no_bids = [[str(round(1.0 - float(yes_ask), 4)), yes_size]]
+                    no_bids = [[str(round(1.0 - float(yes_ask), 4)), yes_ask_size]]
 
                 if yes_bids or no_bids:
                     book.apply_snapshot(

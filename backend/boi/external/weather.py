@@ -84,16 +84,16 @@ class WeatherForecastDistribution:
         p_raw = count / n
 
         # Parametric distribution estimate
-        sd = max(1.2, self.stdev_temp)
+        sd = max(1.6, self.stdev_temp)
         z = (threshold - self.mean_temp) / sd
         p_param = 1.0 - norm_cdf(z)
 
         # Blend ensemble frequency and parametric tail model
-        p_point = 0.65 * p_raw + 0.35 * p_param
+        p_point = 0.50 * p_raw + 0.50 * p_param if n >= 10 else p_param
         p_point = clamp(p_point, 0.005, 0.995)
 
-        # Conservative margin based on ensemble uncertainty and basis risk to settlement agency
-        uncertainty = max(0.04, 1.2 / (n ** 0.5))
+        # Conservative margin based on inter-model spread and basis risk to settlement agency
+        uncertainty = max(0.035, min(0.065, sd / 30.0))
         p_low = clamp(p_point - uncertainty, 0.001, 0.999)
         p_high = clamp(p_point + uncertainty, 0.001, 0.999)
 
@@ -114,15 +114,14 @@ class WeatherForecastDistribution:
 
     def prob_between(self, floor_strike: float, cap_strike: float) -> tuple[float, float, float]:
         """Returns (p_point, p_conservative, p_high) for floor_strike <= T <= cap_strike."""
-        # P(T <= cap) - P(T < floor)
         # For integer temperatures: P(floor <= T <= cap)
-        p_below_cap, _, _ = self.prob_less(cap_strike)
-        p_below_floor_minus_1, _, _ = self.prob_less(floor_strike - 1.0)
-        p_point = max(0.0, p_below_cap - p_below_floor_minus_1)
+        sd = max(1.6, self.stdev_temp)
+        z_cap = (cap_strike + 0.5 - self.mean_temp) / sd
+        z_floor = (floor_strike - 0.5 - self.mean_temp) / sd
+        p_point = max(0.0, norm_cdf(z_cap) - norm_cdf(z_floor))
         p_point = clamp(p_point, 0.005, 0.995)
 
-        n = len(self.ensemble_members)
-        uncertainty = max(0.04, 1.5 / (n ** 0.5))
+        uncertainty = max(0.035, min(0.065, sd / 30.0))
         p_low = clamp(p_point - uncertainty, 0.001, 0.999)
         p_high = clamp(p_point + uncertainty, 0.001, 0.999)
         return (p_point, p_low, p_high)
@@ -140,6 +139,8 @@ class WeatherIntelligenceEngine:
             settlement_grade=False,  # Settlement source is The Weather Company; basis risk is modeled
         )
         self._cache: dict[str, WeatherForecastDistribution] = {}
+        self._error_cooldown: dict[str, datetime] = {}
+        self._pending: dict[str, asyncio.Future] = {}
 
     async def close(self) -> None:
         await self._http.aclose()
@@ -156,11 +157,18 @@ class WeatherIntelligenceEngine:
 
     async def get_forecast(self, city_code: str, target_date: str, metric: str = "high") -> WeatherForecastDistribution | None:
         cache_key = f"{city_code}:{target_date}:{metric}"
+        now = datetime.now(UTC)
         if cache_key in self._cache:
             fc = self._cache[cache_key]
-            # Cache for 15 minutes
-            if (datetime.now(UTC) - fc.source_ts).total_seconds() < 900:
+            # Valid cache for 30 minutes
+            if (now - fc.source_ts).total_seconds() < 1800:
                 return fc
+
+        # Check if in error cooldown (at least 60 seconds after a 429 or failure)
+        if cache_key in self._error_cooldown:
+            if (now - self._error_cooldown[cache_key]).total_seconds() < 60:
+                # Return stale cache if available, else None
+                return self._cache.get(cache_key)
 
         info = STATION_MAP.get(city_code)
         if not info:
@@ -177,13 +185,28 @@ class WeatherIntelligenceEngine:
         try:
             t0 = datetime.now(UTC)
             resp = await self._http.get(url)
-            resp.raise_for_status()
-            data = resp.json()
+            data = None
+            if resp.status_code == 200:
+                data = resp.json()
+            else:
+                # Fallback to multi-model operational forecast
+                fallback_url = (
+                    f"https://api.open-meteo.com/v1/forecast"
+                    f"?latitude={info['lat']}&longitude={info['lon']}"
+                    f"&daily={daily_var}&models=gfs_seamless,ecmwf_ifs025,icon_seamless,gem_seamless"
+                    f"&temperature_unit=fahrenheit&timezone={info['tz']}&forecast_days=4"
+                )
+                fb_resp = await self._http.get(fallback_url)
+                if fb_resp.status_code == 200:
+                    data = fb_resp.json()
+
+            if not data:
+                return self._cache.get(cache_key)
 
             daily = data.get("daily", {})
             times = daily.get("time", [])
             if target_date not in times:
-                return None
+                return self._cache.get(cache_key)
             idx = times.index(target_date)
 
             # Collect all ensemble member predictions for that date
@@ -193,7 +216,7 @@ class WeatherIntelligenceEngine:
                     members.append(float(vals[idx]))
 
             if not members:
-                return None
+                return self._cache.get(cache_key)
 
             m_val = sum(members) / len(members)
             s_val = stdev(members) if len(members) > 1 else 2.0
@@ -218,9 +241,10 @@ class WeatherIntelligenceEngine:
             self.health.mark_ok(source_ts=t0)
             return fc
         except Exception as e:
+            self._error_cooldown[cache_key] = now
             log.warning("Failed to fetch weather forecast for %s on %s: %s", city_code, target_date, e)
             self.health.mark_error(str(e))
-            return None
+            return self._cache.get(cache_key)
 
     async def _get_station_observed_extreme(self, station: str, metric: str) -> float | None:
         """Fetch today's observed high or low from NWS API for the station."""

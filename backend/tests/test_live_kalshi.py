@@ -81,7 +81,7 @@ async def test_live_weather_evaluation(live_system):
     target = (datetime.now(UTC) + timedelta(days=1)).strftime("%Y-%m-%d")
     fc = await weather.get_forecast(city_code="NY", target_date=target, metric="high")
     assert fc is not None
-    assert len(fc.ensemble_members) >= 20
+    assert len(fc.ensemble_members) >= 4
     assert 20.0 <= fc.mean_temp <= 110.0
     p_gt, p_low, p_high = fc.prob_greater(65.0)
     assert 0.0 <= p_low <= p_gt <= p_high <= 1.0

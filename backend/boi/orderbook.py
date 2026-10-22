@@ -173,6 +173,12 @@ class MarketOrderBook:
         if best_yes_bid is not None and best_yes_ask is not None:
             spread = best_yes_ask - best_yes_bid
             mid_price = q_price((best_yes_bid + best_yes_ask) / Decimal("2"))
+        elif best_yes_ask is not None:
+            spread = best_yes_ask
+            mid_price = best_yes_ask
+        elif best_yes_bid is not None:
+            spread = ONE - best_yes_bid
+            mid_price = best_yes_bid
 
         implied_prob_yes = mid_price
 
