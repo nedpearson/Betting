@@ -78,6 +78,16 @@ export async function triggerKillSwitch(): Promise<any> {
   return res.json();
 }
 
+export async function resumeTrading(): Promise<any> {
+  const res = await fetchNoCache(`${BASE}/api/resume`, { method: 'POST' });
+  return res.json();
+}
+
+export async function fetchKillSwitchStatus(): Promise<any> {
+  const res = await fetchNoCache(`${BASE}/api/kill_switch?_t=${Date.now()}`);
+  return res.json();
+}
+
 export async function placeOrder(
   ticker: string,
   side: 'yes' | 'no',

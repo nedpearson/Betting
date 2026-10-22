@@ -11,7 +11,8 @@ import {
   Menu,
   ZoomIn,
   Sliders,
-  Type
+  Type,
+  Play
 } from 'lucide-react';
 import type { PortfolioSummary, FeedHealth } from '../types';
 
@@ -23,6 +24,8 @@ interface HeaderProps {
   isRefreshing: boolean;
   onOpenAccount: () => void;
   isKalshiConnected?: boolean;
+  isHalted?: boolean;
+  onResumeTrading?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -33,6 +36,8 @@ export const Header: React.FC<HeaderProps> = ({
   isRefreshing,
   onOpenAccount,
   isKalshiConnected = false,
+  isHalted = false,
+  onResumeTrading,
 }) => {
   const healthyFeeds = feeds.filter((f) => f.state === 'CONNECTED' || f.state === 'DEGRADED').length;
   const totalFeeds = feeds.length || 6;
@@ -180,15 +185,26 @@ export const Header: React.FC<HeaderProps> = ({
             <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
           </button>
 
-          {/* Emergency Kill Switch */}
-          <button
-            onClick={onTriggerKillSwitch}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-rose-950/60 hover:bg-rose-900 border border-rose-800/80 text-rose-300 font-bold transition active:scale-95 text-xs sm:text-sm"
-            title="Emergency Hardware Kill Switch"
-          >
-            <ShieldAlert className="h-4 w-4 text-rose-400" />
-            <span>HALT</span>
-          </button>
+          {/* Emergency Kill Switch / Resume Control */}
+          {isHalted ? (
+            <button
+              onClick={onResumeTrading}
+              className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 border border-emerald-400 text-zinc-950 font-black transition active:scale-95 text-xs sm:text-sm animate-pulse shadow-lg shadow-emerald-950/50"
+              title="Trading is Halted. Click to Resume Trading"
+            >
+              <Play className="h-4 w-4 fill-current" />
+              <span>RESUME</span>
+            </button>
+          ) : (
+            <button
+              onClick={onTriggerKillSwitch}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-rose-950/60 hover:bg-rose-900 border border-rose-800/80 text-rose-300 font-bold transition active:scale-95 text-xs sm:text-sm"
+              title="Emergency Hardware Kill Switch"
+            >
+              <ShieldAlert className="h-4 w-4 text-rose-400" />
+              <span>HALT</span>
+            </button>
+          )}
         </div>
       </div>
     </header>

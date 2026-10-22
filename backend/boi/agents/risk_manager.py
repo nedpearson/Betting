@@ -125,6 +125,11 @@ class PortfolioRiskManagerAgent(BaseAgent):
         except Exception:
             pass
 
+    def resume_trading(self) -> None:
+        self.is_halted = False
+        self.halt_reason = None
+        self.record_decision("Safety halt cleared; trading resumed by operator.")
+
     def evaluate_trade(
         self,
         ticker: str,

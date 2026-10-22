@@ -3,9 +3,15 @@ import { ShieldAlert, Lock, CheckCircle, Sliders, AlertTriangle } from 'lucide-r
 
 interface RiskControlsProps {
   onTriggerKillSwitch: () => void;
+  isHalted?: boolean;
+  onResumeTrading?: () => void;
 }
 
-export const RiskControls: React.FC<RiskControlsProps> = ({ onTriggerKillSwitch }) => {
+export const RiskControls: React.FC<RiskControlsProps> = ({ 
+  onTriggerKillSwitch, 
+  isHalted = false, 
+  onResumeTrading 
+}) => {
   return (
     <div className="space-y-6">
       <div>
@@ -99,12 +105,21 @@ export const RiskControls: React.FC<RiskControlsProps> = ({ onTriggerKillSwitch 
               Immediately cancels pending orders and locks the platform against further executions.
             </span>
           </div>
-          <button
-            onClick={onTriggerKillSwitch}
-            className="px-4 py-2 rounded-lg bg-rose-600 hover:bg-rose-500 text-white font-mono font-bold text-xs transition"
-          >
-            TRIGGER EMERGENCY HALT
-          </button>
+          {isHalted ? (
+            <button
+              onClick={onResumeTrading}
+              className="px-4 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-mono font-bold text-xs transition animate-pulse shadow-md shadow-emerald-950/40"
+            >
+              RESUME TRADING
+            </button>
+          ) : (
+            <button
+              onClick={onTriggerKillSwitch}
+              className="px-4 py-2 rounded-lg bg-rose-600 hover:bg-rose-500 text-white font-mono font-bold text-xs transition"
+            >
+              TRIGGER EMERGENCY HALT
+            </button>
+          )}
         </div>
       </div>
     </div>

@@ -58,6 +58,8 @@ import {
   fetchHealth,
   fetchCalibration,
   triggerKillSwitch,
+  resumeTrading,
+  fetchKillSwitchStatus,
   placeOrder,
   subscribeEventStream,
 } from './api';
@@ -87,6 +89,7 @@ export const App: React.FC = () => {
   const [portfolio, setPortfolio] = useState<PortfolioSummary | null>(null);
   const [feeds, setFeeds] = useState<FeedHealth[]>([]);
   const [calibration, setCalibration] = useState<CalibrationReport | null>(null);
+  const [isHalted, setIsHalted] = useState<boolean>(false);
 
   const [isAccountModalOpen, setIsAccountModalOpen] = useState(false);
   const [isKalshiConnected, setIsKalshiConnected] = useState(false);
@@ -126,7 +129,7 @@ export const App: React.FC = () => {
   const refreshAll = useCallback(async () => {
     setIsRefreshing(true);
     try {
-      const [bt, opps, mkts, agts, port, hlt, cal] = await Promise.allSettled([
+      const [bt, opps, mkts, agts, port, hlt, cal, ks] = await Promise.allSettled([
         fetchBestTrade(),
         fetchOpportunities(),
         fetchMarkets(),
@@ -134,6 +137,7 @@ export const App: React.FC = () => {
         fetchPortfolio(),
         fetchHealth(),
         fetchCalibration(),
+        fetchKillSwitchStatus(),
       ]);
 
       if (bt.status === 'fulfilled') setBestTrade(bt.value);
@@ -143,6 +147,9 @@ export const App: React.FC = () => {
       if (port.status === 'fulfilled') setPortfolio(port.value);
       if (hlt.status === 'fulfilled') setFeeds(hlt.value);
       if (cal.status === 'fulfilled') setCalibration(cal.value);
+      if (ks.status === 'fulfilled' && ks.value) {
+        setIsHalted(Boolean(ks.value.is_halted || ks.value.status === 'HALTED'));
+      }
 
       checkKalshiConnection();
     } catch (err) {
@@ -164,6 +171,7 @@ export const App: React.FC = () => {
         showToast(`Order filled: ${data.contracts}x ${data.ticker} @ $${data.fill_price}`, 'success');
         refreshAll();
       } else if (eventType === 'safety.halt') {
+        setIsHalted(true);
         showToast(`SAFETY HALT TRIGGERED: ${data.reason}`, 'warn');
         refreshAll();
       }
@@ -222,9 +230,22 @@ export const App: React.FC = () => {
     }
   };
 
+  const handleResumeTrading = async () => {
+    try {
+      const res = await resumeTrading();
+      setIsHalted(false);
+      showToast(`TRADING RESUMED: ${res.reason || 'Safety halt cleared'}`, 'success');
+      refreshAll();
+    } catch (err) {
+      console.error('Failed to resume trading', err);
+      showToast('Failed to resume trading', 'warn');
+    }
+  };
+
   const handleTriggerKillSwitch = async () => {
     try {
       const res = await triggerKillSwitch();
+      setIsHalted(true);
       showToast(`EMERGENCY KILL SWITCH ACTIVATED: ${res.reason || 'All trading paused'}`, 'warn');
       refreshAll();
     } catch (err) {
@@ -243,11 +264,31 @@ export const App: React.FC = () => {
         portfolio={portfolio}
         feeds={feeds}
         onTriggerKillSwitch={handleTriggerKillSwitch}
+        onResumeTrading={handleResumeTrading}
+        isHalted={isHalted}
         onRefresh={refreshAll}
         isRefreshing={isRefreshing}
         onOpenAccount={() => setIsAccountModalOpen(true)}
         isKalshiConnected={isKalshiConnected}
       />
+
+      {/* Safety Halt Active Sticky Banner */}
+      {isHalted && (
+        <div className="bg-rose-950/90 border-b border-rose-850 text-rose-200 px-4 py-3 flex flex-wrap items-center justify-between gap-3 z-30 relative backdrop-blur-sm">
+          <div className="flex items-center gap-2.5 text-xs sm:text-sm font-mono font-medium">
+            <AlertTriangle className="h-4 w-4 text-rose-400 shrink-0 animate-pulse" />
+            <span>
+              <strong>EMERGENCY SAFETY HALT ENGAGED:</strong> Order execution is paused.
+            </span>
+          </div>
+          <button
+            onClick={handleResumeTrading}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-bold text-xs font-mono shadow-md transition active:scale-95"
+          >
+            <span>RESUME TRADING NOW</span>
+          </button>
+        </div>
+      )}
 
       {/* Account Settings & Kalshi Linking Modal */}
       <AccountModal
@@ -469,7 +510,11 @@ export const App: React.FC = () => {
         {activeTab === 'portfolio' && (
           <div className="space-y-8">
             <PortfolioView portfolio={portfolio} />
-            <RiskControls onTriggerKillSwitch={handleTriggerKillSwitch} />
+            <RiskControls 
+              onTriggerKillSwitch={handleTriggerKillSwitch} 
+              isHalted={isHalted}
+              onResumeTrading={handleResumeTrading}
+            />
           </div>
         )}
 

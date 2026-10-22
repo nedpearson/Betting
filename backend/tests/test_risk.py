@@ -97,3 +97,13 @@ async def test_risk_veto_on_safety_halt(risk_agent):
     )
     assert not decision.approved
     assert "halted" in decision.veto_reason
+
+    # Resume trading
+    risk_agent.resume_trading()
+    assert not risk_agent.is_halted
+    decision_after = risk_agent.evaluate_trade(
+        ticker="TEST-TICKER",
+        action="BUY_YES",
+        evaluation=evaluation,
+    )
+    assert decision_after.approved

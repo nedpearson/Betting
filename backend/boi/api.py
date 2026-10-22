@@ -63,6 +63,8 @@ def create_app(
     async def get_health():
         return {
             "status": "online",
+            "is_halted": agent_system.risk_manager.is_halted,
+            "halt_reason": agent_system.risk_manager.halt_reason,
             "utc_time": datetime.now(UTC).isoformat(),
             "feeds": agent_system.health_registry.snapshot(),
         }
@@ -255,12 +257,34 @@ def create_app(
             "fees": order.fees,
         }
 
+    @app.get("/api/kill_switch")
+    async def get_kill_switch_status():
+        return {
+            "status": "HALTED" if agent_system.risk_manager.is_halted else "ACTIVE",
+            "is_halted": agent_system.risk_manager.is_halted,
+            "reason": agent_system.risk_manager.halt_reason,
+            "time": datetime.now(UTC).isoformat(),
+        }
+
     @app.post("/api/kill_switch")
     async def trigger_emergency_kill(
         _auth: bool = Depends(verify_admin),
     ):
         agent_system.risk_manager.trigger_safety_halt("Emergency Kill Switch triggered by operator")
         return {"status": "HALTED", "time": datetime.now(UTC).isoformat()}
+
+    @app.post("/api/resume")
+    @app.delete("/api/kill_switch")
+    async def resume_trading(
+        _auth: bool = Depends(verify_admin),
+    ):
+        agent_system.risk_manager.resume_trading()
+        return {
+            "status": "ACTIVE",
+            "is_halted": False,
+            "reason": "Trading resumed by operator; safety halt cleared",
+            "time": datetime.now(UTC).isoformat(),
+        }
 
     @app.get("/api/stream")
     async def sse_event_stream(request: Request):
