@@ -176,27 +176,27 @@ class WeatherIntelligenceEngine:
 
         daily_var = "temperature_2m_max" if metric == "high" else "temperature_2m_min"
         url = (
-            f"https://ensemble-api.open-meteo.com/v1/ensemble"
+            f"https://api.open-meteo.com/v1/forecast"
             f"?latitude={info['lat']}&longitude={info['lon']}"
-            f"&daily={daily_var}&models=gfs025,ecmwf_ifs025,icon_seamless"
+            f"&daily={daily_var}&models=gfs_seamless,ecmwf_ifs025,icon_seamless,gem_seamless"
             f"&temperature_unit=fahrenheit&timezone={info['tz']}&forecast_days=4"
         )
 
         try:
             t0 = datetime.now(UTC)
-            resp = await self._http.get(url)
+            resp = await self._http.get(url, headers={"User-Agent": "BettingIntelligenceOS/1.0"})
             data = None
             if resp.status_code == 200:
                 data = resp.json()
             else:
-                # Fallback to multi-model operational forecast
+                # Secondary fallback without models param
                 fallback_url = (
                     f"https://api.open-meteo.com/v1/forecast"
                     f"?latitude={info['lat']}&longitude={info['lon']}"
-                    f"&daily={daily_var}&models=gfs_seamless,ecmwf_ifs025,icon_seamless,gem_seamless"
+                    f"&daily={daily_var}"
                     f"&temperature_unit=fahrenheit&timezone={info['tz']}&forecast_days=4"
                 )
-                fb_resp = await self._http.get(fallback_url)
+                fb_resp = await self._http.get(fallback_url, headers={"User-Agent": "BettingIntelligenceOS/1.0"})
                 if fb_resp.status_code == 200:
                     data = fb_resp.json()
 

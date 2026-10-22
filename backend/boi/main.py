@@ -168,7 +168,7 @@ def cli():
             try:
                 await server.serve()
             finally:
-                agent_system.stop()
+                await agent_system.stop()
                 await bus.stop()
                 await rest_client.close()
                 await db.close()
