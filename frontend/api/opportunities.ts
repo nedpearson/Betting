@@ -1,75 +1,21 @@
-export default function handler(req: any, res: any) {
+import { tryProxyToBackend } from './_backend';
+import { evaluateLiveMarkets } from './_eval';
+
+export default async function handler(req: any, res: any) {
   res.setHeader('Cache-Control', 's-maxage=2, stale-while-revalidate=5');
+
+  // 1. Try authoritative Python backend if connected
+  const backendRes = await tryProxyToBackend('/api/opportunities');
+  if (backendRes.proxied && backendRes.data) {
+    return res.status(200).json(backendRes.data);
+  }
+
+  // 2. Authoritative live evaluation on Kalshi open order books
+  const { opportunities } = await evaluateLiveMarkets();
+
   return res.status(200).json({
-    count: 3,
-    opportunities: [
-      {
-        id: 'rec-01-njcol',
-        ticker: 'KXNHLGAME-26OCT28NJCOL-NJ',
-        category: 'STRONG_CANDIDATE',
-        action: 'BUY_YES',
-        status: 'active',
-        entry_price: '0.3900',
-        max_entry_price: '0.8400',
-        estimated_probability: '0.912',
-        conservative_probability: '0.872',
-        market_probability: '0.385',
-        conservative_edge: '0.460',
-        net_roi: '122.9%',
-        recommended_contracts: '12',
-        recommended_stake: '4.94',
-        max_loss: '4.07',
-        max_profit: '5.93',
-        model: 'sports_inplay_margin_v1',
-        evidence_summary: 'Model sports_inplay_margin_v1 calculates true win probability at 91.2% (conservative lower-bound: 87.2%) versus market-implied 38.5%.',
-        created_at: new Date().toISOString(),
-        expires_at: new Date(Date.now() + 180000).toISOString(),
-      },
-      {
-        id: 'rec-02-miat80',
-        ticker: 'KXHIGHMIA-26OCT22-T80',
-        category: 'STRONG_CANDIDATE',
-        action: 'BUY_YES',
-        status: 'active',
-        entry_price: '0.0200',
-        max_entry_price: '0.2400',
-        estimated_probability: '0.284',
-        conservative_probability: '0.245',
-        market_probability: '0.020',
-        conservative_edge: '0.203',
-        net_roi: '626.9%',
-        recommended_contracts: '25',
-        recommended_stake: '5.00',
-        max_loss: '5.00',
-        max_profit: '31.35',
-        model: 'weather_ensemble_kde_v1',
-        evidence_summary: 'Multi-model ensemble (NCEP GEFS + ECMWF) projects Miami high temperature >80°F with 28.4% probability vs 2.0% market implied.',
-        created_at: new Date().toISOString(),
-        expires_at: new Date(Date.now() + 180000).toISOString(),
-      },
-      {
-        id: 'rec-03-chinb70',
-        ticker: 'KXHIGHCHI-26OCT22-B70.5',
-        category: 'CANDIDATE',
-        action: 'BUY_YES',
-        status: 'active',
-        entry_price: '0.1200',
-        max_entry_price: '0.3500',
-        estimated_probability: '0.360',
-        conservative_probability: '0.315',
-        market_probability: '0.120',
-        conservative_edge: '0.179',
-        net_roi: '148.7%',
-        recommended_contracts: '18',
-        recommended_stake: '2.16',
-        max_loss: '2.16',
-        max_profit: '3.21',
-        model: 'weather_ensemble_kde_v1',
-        evidence_summary: 'Chicago high temperature between 69°F-71°F supported by NOAA surface observations.',
-        created_at: new Date().toISOString(),
-        expires_at: new Date(Date.now() + 180000).toISOString(),
-      },
-    ],
+    count: opportunities.length,
+    opportunities,
     checked_at: new Date().toISOString(),
   });
 }

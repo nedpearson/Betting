@@ -1,9 +1,19 @@
+import { tryProxyToBackend } from '../_backend';
+
 export default async function handler(req: any, res: any) {
   const { ticker } = req.query;
   if (!ticker) {
     return res.status(400).json({ error: 'Ticker is required' });
   }
 
+  // 1. Try authoritative Python backend
+  const backendRes = await tryProxyToBackend(`/api/market/${encodeURIComponent(ticker)}`);
+  if (backendRes.proxied && backendRes.data) {
+    res.setHeader('Cache-Control', 's-maxage=2, stale-while-revalidate=5');
+    return res.status(200).json(backendRes.data);
+  }
+
+  // 2. Authoritative live Kalshi market & order book fetch
   try {
     const [mktRes, obRes] = await Promise.allSettled([
       fetch(`https://api.elections.kalshi.com/trade-api/v2/markets/${encodeURIComponent(ticker)}`),
@@ -22,8 +32,7 @@ export default async function handler(req: any, res: any) {
     }
 
     // Derive YES ask from NO bid complement
-    let yesBids = orderbookData.yes || [];
-    let noBids = orderbookData.no || [];
+    const noBids = orderbookData.no || [];
     let derivedYesAsk = null;
 
     if (noBids.length > 0) {

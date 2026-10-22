@@ -1,119 +1,121 @@
-export default async function handler(req: any, res: any) {
-  const start = Date.now();
-  let kalshiOk = false;
-  let kalshiLatency = 0;
+import { tryProxyToBackend } from './_backend';
 
+interface PingResult {
+  ok: boolean;
+  latency: number;
+  error: string | null;
+}
+
+async function pingUrl(url: string, headers: Record<string, string> = {}): Promise<PingResult> {
+  const start = Date.now();
   try {
-    const kRes = await fetch('https://api.elections.kalshi.com/trade-api/v2/exchange/status');
-    kalshiLatency = Date.now() - start;
-    kalshiOk = kRes.ok;
-  } catch (e) {
-    kalshiOk = false;
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 3000);
+    const resp = await fetch(url, { headers, signal: controller.signal });
+    clearTimeout(timeout);
+    return {
+      ok: resp.ok,
+      latency: Date.now() - start,
+      error: resp.ok ? null : `HTTP ${resp.status}`,
+    };
+  } catch (err: any) {
+    return {
+      ok: false,
+      latency: Date.now() - start,
+      error: err.message || 'Request failed',
+    };
   }
+}
+
+export default async function handler(req: any, res: any) {
+  // 1. Try authoritative Python backend
+  const backendRes = await tryProxyToBackend('/api/health');
+  if (backendRes.proxied && backendRes.data) {
+    res.setHeader('Cache-Control', 's-maxage=2, stale-while-revalidate=5');
+    return res.status(200).json(backendRes.data);
+  }
+
+  // 2. Measure genuine live latencies to external providers
+  const [kalshiPing, coinbasePing, weatherPing, noaaPing] = await Promise.all([
+    pingUrl('https://api.elections.kalshi.com/trade-api/v2/exchange/status'),
+    pingUrl('https://api.exchange.coinbase.com/products/BTC-USD/ticker'),
+    pingUrl('https://api.open-meteo.com/v1/forecast?latitude=34.05&longitude=-118.24&current_weather=true'),
+    pingUrl('https://api.weather.gov/', { 'User-Agent': 'BettingIntelligenceOS/1.0' }),
+  ]);
+
+  const nowIso = new Date().toISOString();
 
   const feeds = [
     {
       name: 'kalshi_rest',
       description: 'Kalshi Production REST API',
-      state: kalshiOk ? 'CONNECTED' : 'DEGRADED',
+      state: kalshiPing.ok ? 'CONNECTED' : 'DISCONNECTED',
       transport: 'rest',
-      age_sec: 1.2,
+      age_sec: 0.1,
       stale_after_sec: 60.0,
-      last_update_utc: new Date().toISOString(),
-      latency_ms_p50: kalshiLatency || 180,
-      reliability: 0.999,
-      messages_total: 1042,
-      errors_total: 0,
-      last_error: null,
+      last_update_utc: nowIso,
+      latency_ms_p50: kalshiPing.latency,
+      reliability: kalshiPing.ok ? 1.0 : 0.0,
+      messages_total: 1,
+      errors_total: kalshiPing.ok ? 0 : 1,
+      last_error: kalshiPing.error,
       licensing_note: 'CFTC-regulated exchange official API',
       settlement_grade: true,
     },
     {
-      name: 'weather_openmeteo',
-      description: 'Open-Meteo Ensemble Weather API & NWS Observations',
-      state: 'CONNECTED',
-      transport: 'rest_poll',
-      age_sec: 14.5,
-      stale_after_sec: 1800.0,
-      last_update_utc: new Date(Date.now() - 14500).toISOString(),
-      latency_ms_p50: 95,
-      reliability: 0.995,
-      messages_total: 156,
-      errors_total: 0,
-      last_error: null,
-      licensing_note: 'Open-Meteo open weather models + NOAA public domain',
-      settlement_grade: false,
-    },
-    {
       name: 'crypto_coinbase',
       description: 'Coinbase Exchange Spot Market Data',
-      state: 'CONNECTED',
+      state: coinbasePing.ok ? 'CONNECTED' : 'DISCONNECTED',
       transport: 'rest_poll',
-      age_sec: 2.1,
+      age_sec: 0.1,
       stale_after_sec: 30.0,
-      last_update_utc: new Date(Date.now() - 2100).toISOString(),
-      latency_ms_p50: 64,
-      reliability: 1.0,
-      messages_total: 890,
-      errors_total: 0,
-      last_error: null,
+      last_update_utc: nowIso,
+      latency_ms_p50: coinbasePing.latency,
+      reliability: coinbasePing.ok ? 1.0 : 0.0,
+      messages_total: 1,
+      errors_total: coinbasePing.ok ? 0 : 1,
+      last_error: coinbasePing.error,
       licensing_note: 'Coinbase Public Market Data API (proxy for CF Benchmarks)',
       settlement_grade: false,
     },
     {
-      name: 'sports_live',
-      description: 'Kalshi Live Milestone & Game Feeds',
-      state: 'CONNECTED',
+      name: 'weather_openmeteo',
+      description: 'Open-Meteo Ensemble Weather API',
+      state: weatherPing.ok ? 'CONNECTED' : 'DISCONNECTED',
       transport: 'rest_poll',
-      age_sec: 5.4,
-      stale_after_sec: 60.0,
-      last_update_utc: new Date(Date.now() - 5400).toISOString(),
-      latency_ms_p50: 120,
-      reliability: 0.99,
-      messages_total: 340,
-      errors_total: 0,
-      last_error: null,
-      licensing_note: 'Exchange live milestone game feed',
-      settlement_grade: true,
-    },
-    {
-      name: 'economic_fred',
-      description: 'Federal Reserve Economic Data (FRED) API',
-      state: 'CONNECTED',
-      transport: 'rest_poll',
-      age_sec: 450.0,
-      stale_after_sec: 86400.0,
-      last_update_utc: new Date(Date.now() - 450000).toISOString(),
-      latency_ms_p50: 110,
-      reliability: 1.0,
-      messages_total: 42,
-      errors_total: 0,
-      last_error: null,
-      licensing_note: 'Federal Reserve Bank of St. Louis public data API',
-      settlement_grade: true,
-    },
-    {
-      name: 'news_verification',
-      description: 'Authoritative Official RSS & News Wire Verification',
-      state: 'CONNECTED',
-      transport: 'rest_poll',
-      age_sec: 62.0,
-      stale_after_sec: 7200.0,
-      last_update_utc: new Date(Date.now() - 62000).toISOString(),
-      latency_ms_p50: 140,
-      reliability: 0.985,
-      messages_total: 215,
-      errors_total: 0,
-      last_error: null,
-      licensing_note: 'Public government RSS feeds (Fed, BLS, NOAA)',
+      age_sec: 0.1,
+      stale_after_sec: 1800.0,
+      last_update_utc: nowIso,
+      latency_ms_p50: weatherPing.latency,
+      reliability: weatherPing.ok ? 1.0 : 0.0,
+      messages_total: 1,
+      errors_total: weatherPing.ok ? 0 : 1,
+      last_error: weatherPing.error,
+      licensing_note: 'Open-Meteo open weather models',
       settlement_grade: false,
+    },
+    {
+      name: 'weather_noaa',
+      description: 'NOAA / National Weather Service API',
+      state: noaaPing.ok ? 'CONNECTED' : 'DISCONNECTED',
+      transport: 'rest_poll',
+      age_sec: 0.1,
+      stale_after_sec: 1800.0,
+      last_update_utc: nowIso,
+      latency_ms_p50: noaaPing.latency,
+      reliability: noaaPing.ok ? 1.0 : 0.0,
+      messages_total: 1,
+      errors_total: noaaPing.ok ? 0 : 1,
+      last_error: noaaPing.error,
+      licensing_note: 'US National Weather Service public domain',
+      settlement_grade: true,
     },
   ];
 
   res.setHeader('Cache-Control', 's-maxage=2, stale-while-revalidate=5');
   return res.status(200).json({
-    status: 'online',
-    utc_time: new Date().toISOString(),
+    status: kalshiPing.ok ? 'online' : 'degraded',
+    utc_time: nowIso,
     feeds,
   });
 }

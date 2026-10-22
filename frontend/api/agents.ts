@@ -1,150 +1,48 @@
-export default function handler(req: any, res: any) {
-  const agents = [
-    {
-      name: 'Agent-01-MarketDiscovery',
-      role: 'Market Discovery & Universe Selection',
-      status: 'ACTIVE',
-      last_active_utc: new Date().toISOString(),
-      decisions_count: 852,
-      errors_count: 0,
-      recent_logs: [{ ts: new Date().toISOString(), summary: 'Discovered 1000 open contracts across Weather, Crypto, Sports, Macro' }],
-    },
-    {
-      name: 'Agent-02-LiveMarketMonitor',
-      role: 'Sub-Second Order Book & Ticks Monitor',
-      status: 'ACTIVE',
-      last_active_utc: new Date().toISOString(),
-      decisions_count: 1420,
-      errors_count: 0,
-      recent_logs: [{ ts: new Date().toISOString(), summary: 'Tracking top-of-book depth and spreads' }],
-    },
-    {
-      name: 'Agent-03-SportsIntelligence',
-      role: 'Live Game State & Stern (1994) Brownian Motion',
-      status: 'ACTIVE',
-      last_active_utc: new Date().toISOString(),
-      decisions_count: 310,
-      errors_count: 0,
-      recent_logs: [{ ts: new Date().toISOString(), summary: 'Stern margin drift dynamics running on NBA/NHL' }],
-    },
-    {
-      name: 'Agent-04-CryptoIntelligence',
-      role: 'Coinbase Spot Realized EWMA Volatility',
-      status: 'ACTIVE',
-      last_active_utc: new Date().toISOString(),
-      decisions_count: 670,
-      errors_count: 0,
-      recent_logs: [{ ts: new Date().toISOString(), summary: 'BTC spot $88,420; EWMA vol 54.2% annualized' }],
-    },
-    {
-      name: 'Agent-05-EconomicIntelligence',
-      role: 'BLS / FRED Macro Release Forecaster',
-      status: 'ACTIVE',
-      last_active_utc: new Date().toISOString(),
-      decisions_count: 89,
-      errors_count: 0,
-      recent_logs: [{ ts: new Date().toISOString(), summary: 'CPI & Nonfarm payroll distribution models active' }],
-    },
-    {
-      name: 'Agent-06-WeatherIntelligence',
-      role: 'Open-Meteo Ensemble & NWS Integer °F Settlement',
-      status: 'ACTIVE',
-      last_active_utc: new Date().toISOString(),
-      decisions_count: 420,
-      errors_count: 0,
-      recent_logs: [{ ts: new Date().toISOString(), summary: 'NOAA GEFS + ECMWF IFS ensemble consensus mapped' }],
-    },
-    {
-      name: 'Agent-07-NewsVerification',
-      role: 'Authoritative RSS Wire & SHA-256 Deduplication',
-      status: 'ACTIVE',
-      last_active_utc: new Date().toISOString(),
-      decisions_count: 512,
-      errors_count: 0,
-      recent_logs: [{ ts: new Date().toISOString(), summary: 'Zero breaking anomalies detected' }],
-    },
-    {
-      name: 'Agent-08-QuantitativeForecasting',
-      role: 'Multi-Model Probability Ensembles & Bootstrap CI',
-      status: 'ACTIVE',
-      last_active_utc: new Date().toISOString(),
-      decisions_count: 940,
-      errors_count: 0,
-      recent_logs: [{ ts: new Date().toISOString(), summary: 'Computing 95% lower bound conservative probabilities' }],
-    },
-    {
-      name: 'Agent-09-MarketMicrostructure',
-      role: 'Multi-Tier Price Grid & Depth Impact Engine',
-      status: 'ACTIVE',
-      last_active_utc: new Date().toISOString(),
-      decisions_count: 810,
-      errors_count: 0,
-      recent_logs: [{ ts: new Date().toISOString(), summary: 'Complement asks derived; sequence gaps monitored' }],
-    },
-    {
-      name: 'Agent-10-ExpectedValueAnalyst',
-      role: 'Exact Quadratic Fee Deduction & Net ROI Solver',
-      status: 'ACTIVE',
-      last_active_utc: new Date().toISOString(),
-      decisions_count: 730,
-      errors_count: 0,
-      recent_logs: [{ ts: new Date().toISOString(), summary: 'Exact quadratic taker fee ceil(0.07*C*P*(1-P)) applied' }],
-    },
-    {
-      name: 'Agent-11-PortfolioRiskManager',
-      role: 'Hard Risk Limits & Absolute Trade VETO Power',
-      status: 'ACTIVE',
-      last_active_utc: new Date().toISOString(),
-      decisions_count: 615,
-      errors_count: 0,
-      recent_logs: [{ ts: new Date().toISOString(), summary: '1.0% single trade ($5.00) and 10% open risk limits enforced' }],
-    },
-    {
-      name: 'Agent-12-TradeExecutionAdvisor',
-      role: 'Execution Routing & Paper Fill Simulator',
-      status: 'ACTIVE',
-      last_active_utc: new Date().toISOString(),
-      decisions_count: 240,
-      errors_count: 0,
-      recent_logs: [{ ts: new Date().toISOString(), summary: 'Execution mode: INTELLIGENCE ONLY (Gated)' }],
-    },
-    {
-      name: 'Agent-13-ModelValidation',
-      role: 'Out-of-Sample Calibration (Brier, Log-Loss, ECE)',
-      status: 'ACTIVE',
-      last_active_utc: new Date().toISOString(),
-      decisions_count: 180,
-      errors_count: 0,
-      recent_logs: [{ ts: new Date().toISOString(), summary: 'Brier score 0.124; ECE 0.038 within target bounds' }],
-    },
-    {
-      name: 'Agent-14-BehavioralRisk',
-      role: 'Anti-Revenge Trading & Post-Loss Cool-Offs',
-      status: 'ACTIVE',
-      last_active_utc: new Date().toISOString(),
-      decisions_count: 120,
-      errors_count: 0,
-      recent_logs: [{ ts: new Date().toISOString(), summary: 'Zero emotional tilt detected; rules disciplined' }],
-    },
-    {
-      name: 'Agent-15-SystemReliability',
-      role: 'Token Bucket Rate Limits & P50/P95 Latency',
-      status: 'ACTIVE',
-      last_active_utc: new Date().toISOString(),
-      decisions_count: 1450,
-      errors_count: 0,
-      recent_logs: [{ ts: new Date().toISOString(), summary: 'All token bucket quotas nominal; 0 rate limits exceeded' }],
-    },
-    {
-      name: 'Agent-16-ChiefInvestmentOfficer',
-      role: 'Master Multi-Agent Coordinator & Best Trade Gate',
-      status: 'ACTIVE',
-      last_active_utc: new Date().toISOString(),
-      decisions_count: 480,
-      errors_count: 0,
-      recent_logs: [{ ts: new Date().toISOString(), summary: 'Consensus gate active; strictly conservative thresholds' }],
-    },
-  ];
+import { tryProxyToBackend } from './_backend';
+
+const AGENT_DEFINITIONS = [
+  { name: 'Agent-01-MarketDiscovery', role: 'Market Discovery & Universe Selection' },
+  { name: 'Agent-02-LiveMarketMonitor', role: 'Sub-Second Order Book & Ticks Monitor' },
+  { name: 'Agent-03-SportsIntelligence', role: 'Live Game State & Stern (1994) Brownian Motion' },
+  { name: 'Agent-04-CryptoIntelligence', role: 'Coinbase Spot Realized EWMA Volatility' },
+  { name: 'Agent-05-EconomicIntelligence', role: 'BLS / FRED Macro Release Forecaster' },
+  { name: 'Agent-06-WeatherIntelligence', role: 'Open-Meteo Ensemble & NWS Integer °F Settlement' },
+  { name: 'Agent-07-NewsVerification', role: 'Authoritative RSS Wire & SHA-256 Deduplication' },
+  { name: 'Agent-08-QuantitativeForecasting', role: 'Multi-Model Probability Ensembles & Bootstrap CI' },
+  { name: 'Agent-09-MarketMicrostructure', role: 'Multi-Tier Price Grid & Depth Impact Engine' },
+  { name: 'Agent-10-ExpectedValueAnalyst', role: 'Exact Quadratic Fee Deduction & Net ROI Solver' },
+  { name: 'Agent-11-PortfolioRiskManager', role: 'Hard Risk Limits & Absolute Trade VETO Power' },
+  { name: 'Agent-12-TradeExecutionAdvisor', role: 'Execution Routing & Paper Fill Simulator' },
+  { name: 'Agent-13-ModelValidation', role: 'Out-of-Sample Calibration (Brier, Log-Loss, ECE)' },
+  { name: 'Agent-14-BehavioralRisk', role: 'Anti-Revenge Trading & Post-Loss Cool-Offs' },
+  { name: 'Agent-15-SystemReliability', role: 'Token Bucket Rate Limits & P50/P95 Latency' },
+  { name: 'Agent-16-ChiefInvestmentOfficer', role: 'Master Multi-Agent Coordinator & Best Trade Gate' },
+];
+
+export default async function handler(req: any, res: any) {
+  // 1. Try authoritative Python backend
+  const backendRes = await tryProxyToBackend('/api/agents');
+  if (backendRes.proxied && backendRes.data) {
+    res.setHeader('Cache-Control', 's-maxage=2, stale-while-revalidate=5');
+    return res.status(200).json(backendRes.data);
+  }
+
+  // 2. Truthful standalone status when persistent swarm is local or offline
+  const nowIso = new Date().toISOString();
+  const agents = AGENT_DEFINITIONS.map((def) => ({
+    name: def.name,
+    role: def.role,
+    status: 'STANDBY',
+    last_active_utc: nowIso,
+    decisions_count: 0,
+    errors_count: 0,
+    recent_logs: [
+      {
+        ts: nowIso,
+        summary: 'Persistent background swarm is in STANDBY on serverless edge. Live orderbook evaluation runs on request.',
+      },
+    ],
+  }));
 
   res.setHeader('Cache-Control', 's-maxage=5, stale-while-revalidate=10');
   return res.status(200).json({ count: agents.length, agents });

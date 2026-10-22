@@ -1,5 +1,17 @@
+import { tryProxyToBackend } from './_backend';
+
 export default async function handler(req: any, res: any) {
   const category = req.query?.category;
+
+  // 1. Try authoritative Python backend
+  const backendQuery = category ? `/api/markets?category=${encodeURIComponent(category)}` : '/api/markets';
+  const backendRes = await tryProxyToBackend(backendQuery);
+  if (backendRes.proxied && backendRes.data) {
+    res.setHeader('Cache-Control', 's-maxage=5, stale-while-revalidate=15');
+    return res.status(200).json(backendRes.data);
+  }
+
+  // 2. Authoritative live Kalshi market discovery
   try {
     const kRes = await fetch('https://api.elections.kalshi.com/trade-api/v2/markets?status=open&limit=100&mve_filter=exclude');
     if (kRes.ok) {
