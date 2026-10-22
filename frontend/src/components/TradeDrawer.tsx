@@ -10,7 +10,7 @@ import {
   Info, 
   DollarSign, 
   Minus, 
-  Plus,
+  Plus, 
   Lock
 } from 'lucide-react';
 import type { Market } from '../types';
@@ -39,20 +39,27 @@ export const TradeDrawer: React.FC<TradeDrawerProps> = ({
   const [side, setSide] = useState<'yes' | 'no'>(initialSide);
   const [contracts, setContracts] = useState<number>(initialContracts);
   const [price, setPrice] = useState<number>(initialPrice || 0.50);
+  const [dollarAmount, setDollarAmount] = useState<string>('');
 
   useEffect(() => {
     if (market && isOpen) {
-      if (initialSide) setSide(initialSide);
-      if (initialContracts) setContracts(initialContracts);
-      if (initialPrice !== undefined && initialPrice > 0) {
-        setPrice(initialPrice);
-      } else if (side === 'yes' && market.yes_ask) {
-        setPrice(parseFloat(market.yes_ask));
-      } else if (side === 'no' && market.yes_bid) {
-        setPrice(parseFloat((1.0 - parseFloat(market.yes_bid)).toFixed(2)));
-      } else {
-        setPrice(0.50);
+      const s = initialSide || 'yes';
+      setSide(s);
+
+      let p = initialPrice && initialPrice > 0 ? initialPrice : 0.50;
+      if (!initialPrice) {
+        if (s === 'yes' && market.yes_ask) {
+          p = parseFloat(market.yes_ask);
+        } else if (s === 'no' && market.yes_bid) {
+          p = parseFloat((1.0 - parseFloat(market.yes_bid)).toFixed(2));
+        }
       }
+      p = Math.max(0.01, Math.min(0.99, p));
+      setPrice(p);
+
+      const c = initialContracts && initialContracts > 0 ? initialContracts : 10;
+      setContracts(c);
+      setDollarAmount((c * p).toFixed(2));
     }
   }, [market, isOpen, initialSide, initialContracts, initialPrice]);
 
@@ -68,12 +75,40 @@ export const TradeDrawer: React.FC<TradeDrawerProps> = ({
   const netProfit = Math.max(0, maxPayout - totalCost);
   const netRoiPct = totalCost > 0 ? (netProfit / totalCost) * 100 : 0;
 
-  const handleQuickAdd = (amount: number) => {
-    setContracts(prev => Math.max(1, prev + amount));
+  const handleContractsChange = (num: number) => {
+    const valid = Math.max(1, num);
+    setContracts(valid);
+    setDollarAmount((valid * price).toFixed(2));
   };
 
-  const handleSetContracts = (amount: number) => {
-    setContracts(Math.max(1, amount));
+  const handleDollarChange = (valStr: string) => {
+    setDollarAmount(valStr);
+    const parsed = parseFloat(valStr);
+    if (!isNaN(parsed) && parsed > 0 && price > 0) {
+      const calculatedContracts = Math.max(1, Math.round(parsed / price));
+      setContracts(calculatedContracts);
+    }
+  };
+
+  const handlePriceChange = (newPrice: number) => {
+    const p = Math.max(0.01, Math.min(0.99, parseFloat(newPrice.toFixed(2))));
+    setPrice(p);
+    setDollarAmount((contracts * p).toFixed(2));
+  };
+
+  const handleSideToggle = (newSide: 'yes' | 'no') => {
+    setSide(newSide);
+    if (market) {
+      let p = price;
+      if (newSide === 'yes' && market.yes_ask) {
+        p = parseFloat(market.yes_ask);
+      } else if (newSide === 'no' && market.yes_bid) {
+        p = parseFloat((1.0 - parseFloat(market.yes_bid)).toFixed(2));
+      }
+      p = Math.max(0.01, Math.min(0.99, p));
+      setPrice(p);
+      setDollarAmount((contracts * p).toFixed(2));
+    }
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -88,7 +123,7 @@ export const TradeDrawer: React.FC<TradeDrawerProps> = ({
         {/* Drawer Drag Bar (Mobile) */}
         <div className="w-14 h-1.5 bg-zinc-700 rounded-full mx-auto mt-3.5 sm:hidden shrink-0" />
 
-        {/* Drawer Header (Large & Clear) */}
+        {/* Drawer Header */}
         <div className="p-5 sm:p-6 border-b border-zinc-800 flex items-start justify-between">
           <div className="flex-1 pr-4">
             <div className="flex items-center gap-2.5 mb-2">
@@ -109,21 +144,21 @@ export const TradeDrawer: React.FC<TradeDrawerProps> = ({
           </div>
           <button
             onClick={onClose}
-            className="p-2.5 rounded-2xl text-zinc-400 hover:text-white hover:bg-zinc-800 transition shrink-0 border border-zinc-800"
+            className="p-2 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-white transition"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        {/* Drawer Body / Form */}
-        <form onSubmit={handleSubmit} className="p-5 sm:p-6 overflow-y-auto space-y-6 flex-1">
+        {/* Order Form Body */}
+        <form onSubmit={handleSubmit} className="p-5 sm:p-6 overflow-y-auto space-y-5 flex-1">
           
-          {/* Side Selector (BUY YES vs BUY NO - Huge Buttons) */}
+          {/* Side Selector (BUY YES vs BUY NO) */}
           <div className="grid grid-cols-2 gap-3 p-1.5 bg-zinc-950 rounded-2xl border border-zinc-800">
             <button
               type="button"
-              onClick={() => setSide('yes')}
-              className={`py-4 rounded-xl text-sm sm:text-base font-black transition flex flex-col items-center justify-center gap-1 ${
+              onClick={() => handleSideToggle('yes')}
+              className={`py-4 rounded-xl text-sm sm:text-base font-black transition flex flex-col items-center justify-center gap-1 cursor-pointer ${
                 side === 'yes'
                   ? 'bg-emerald-500 text-zinc-950 shadow-lg shadow-emerald-500/30'
                   : 'text-zinc-400 hover:text-white'
@@ -136,8 +171,8 @@ export const TradeDrawer: React.FC<TradeDrawerProps> = ({
             </button>
             <button
               type="button"
-              onClick={() => setSide('no')}
-              className={`py-4 rounded-xl text-sm sm:text-base font-black transition flex flex-col items-center justify-center gap-1 ${
+              onClick={() => handleSideToggle('no')}
+              className={`py-4 rounded-xl text-sm sm:text-base font-black transition flex flex-col items-center justify-center gap-1 cursor-pointer ${
                 side === 'no'
                   ? 'bg-rose-500 text-white shadow-lg shadow-rose-500/30'
                   : 'text-zinc-400 hover:text-white'
@@ -150,27 +185,84 @@ export const TradeDrawer: React.FC<TradeDrawerProps> = ({
             </button>
           </div>
 
-          {/* Price & Contracts Steppers (Large Controls) */}
+          {/* Amount to Bet ($) Section - Primary Control */}
+          <div className="p-4 sm:p-5 rounded-2xl bg-zinc-950 border-2 border-emerald-500/40 space-y-3 shadow-lg shadow-emerald-950/20">
+            <div className="flex items-center justify-between">
+              <label className="text-xs sm:text-sm font-black text-emerald-400 uppercase tracking-wider flex items-center gap-1.5">
+                <DollarSign className="w-4 h-4" />
+                Actual Amount to Bet ($)
+              </label>
+              <span className="text-xs text-zinc-400 font-mono font-bold">
+                {contracts} contracts @ ${price.toFixed(2)}
+              </span>
+            </div>
+
+            <div className="relative flex items-center">
+              <span className="absolute left-4 text-2xl font-black text-emerald-400 font-mono">$</span>
+              <input
+                type="number"
+                step="0.50"
+                min="0.50"
+                value={dollarAmount}
+                onChange={(e) => handleDollarChange(e.target.value)}
+                placeholder={(contracts * price).toFixed(2)}
+                className="w-full pl-10 pr-4 py-3 bg-zinc-900 border border-zinc-700 focus:border-emerald-400 rounded-xl text-2xl sm:text-3xl font-black font-mono text-white focus:outline-none transition shadow-inner"
+              />
+            </div>
+
+            {/* Quick Dollar Chips */}
+            <div className="flex items-center gap-2 overflow-x-auto pb-1 pt-1">
+              {[5, 10, 20, 50].map((amt) => (
+                <button
+                  key={amt}
+                  type="button"
+                  onClick={() => handleDollarChange(String(amt))}
+                  className="px-3.5 py-1.5 rounded-xl border border-zinc-800 bg-zinc-900 hover:bg-zinc-800 hover:border-emerald-500/60 text-xs font-mono font-bold text-zinc-200 hover:text-white transition active:scale-95 cursor-pointer"
+                >
+                  ${amt}
+                </button>
+              ))}
+              <button
+                type="button"
+                onClick={() => handleDollarChange('82.38')}
+                className="px-3 py-1.5 rounded-xl border border-emerald-500/50 bg-emerald-500/10 hover:bg-emerald-500/20 text-xs font-mono font-bold text-emerald-400 transition active:scale-95 ml-auto cursor-pointer"
+                title="Use full available cash balance ($82.38)"
+              >
+                Max Cash ($82.38)
+              </button>
+            </div>
+          </div>
+
+          {/* Price & Contracts Steppers (Manual Fine-Tuning) */}
           <div className="grid grid-cols-2 gap-4">
             
             {/* Limit Price */}
             <div className="p-4 rounded-2xl bg-zinc-950 border border-zinc-800 space-y-2">
-              <label className="text-xs font-bold text-zinc-400 uppercase tracking-wider block">Limit Price</label>
+              <label className="text-xs font-bold text-zinc-400 uppercase tracking-wider block">Limit Price ($)</label>
               <div className="flex items-center justify-between">
                 <button
                   type="button"
-                  onClick={() => setPrice(p => Math.max(0.01, parseFloat((p - 0.01).toFixed(2))))}
-                  className="p-2 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-white border border-zinc-800 active:scale-95 transition"
+                  onClick={() => handlePriceChange(price - 0.01)}
+                  className="p-2 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-white border border-zinc-800 active:scale-95 transition cursor-pointer"
                 >
                   <Minus className="w-4 h-4" />
                 </button>
-                <div className="text-xl sm:text-2xl font-black font-mono text-white">
-                  ${price.toFixed(2)}
+                <div className="flex items-center justify-center">
+                  <span className="text-zinc-500 font-mono text-base mr-0.5">$</span>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0.01"
+                    max="0.99"
+                    value={price}
+                    onChange={(e) => handlePriceChange(parseFloat(e.target.value) || 0.01)}
+                    className="w-16 text-center bg-transparent text-xl sm:text-2xl font-black font-mono text-white focus:outline-none focus:bg-zinc-900 rounded-lg py-1"
+                  />
                 </div>
                 <button
                   type="button"
-                  onClick={() => setPrice(p => Math.min(0.99, parseFloat((p + 0.01).toFixed(2))))}
-                  className="p-2 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-white border border-zinc-800 active:scale-95 transition"
+                  onClick={() => handlePriceChange(price + 0.01)}
+                  className="p-2 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-white border border-zinc-800 active:scale-95 transition cursor-pointer"
                 >
                   <Plus className="w-4 h-4" />
                 </button>
@@ -179,22 +271,29 @@ export const TradeDrawer: React.FC<TradeDrawerProps> = ({
 
             {/* Contracts Quantity */}
             <div className="p-4 rounded-2xl bg-zinc-950 border border-zinc-800 space-y-2">
-              <label className="text-xs font-bold text-zinc-400 uppercase tracking-wider block">Contracts</label>
+              <label className="text-xs font-bold text-zinc-400 uppercase tracking-wider block">Contracts (Count)</label>
               <div className="flex items-center justify-between">
                 <button
                   type="button"
-                  onClick={() => handleQuickAdd(-5)}
-                  className="p-2 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-white border border-zinc-800 active:scale-95 transition"
+                  onClick={() => handleContractsChange(contracts - 1)}
+                  className="p-2 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-white border border-zinc-800 active:scale-95 transition cursor-pointer"
                 >
                   <Minus className="w-4 h-4" />
                 </button>
-                <div className="text-xl sm:text-2xl font-black font-mono text-emerald-400">
-                  {contracts}x
+                <div className="flex items-center justify-center">
+                  <input
+                    type="number"
+                    min="1"
+                    value={contracts}
+                    onChange={(e) => handleContractsChange(parseInt(e.target.value) || 1)}
+                    className="w-16 text-center bg-transparent text-xl sm:text-2xl font-black font-mono text-emerald-400 focus:outline-none focus:bg-zinc-900 rounded-lg py-1"
+                  />
+                  <span className="text-sm text-zinc-500 font-mono -ml-1">x</span>
                 </div>
                 <button
                   type="button"
-                  onClick={() => handleQuickAdd(5)}
-                  className="p-2 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-white border border-zinc-800 active:scale-95 transition"
+                  onClick={() => handleContractsChange(contracts + 1)}
+                  className="p-2 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-white border border-zinc-800 active:scale-95 transition cursor-pointer"
                 >
                   <Plus className="w-4 h-4" />
                 </button>
@@ -208,23 +307,23 @@ export const TradeDrawer: React.FC<TradeDrawerProps> = ({
               <button
                 key={qty}
                 type="button"
-                onClick={() => handleSetContracts(qty)}
-                className={`flex-1 py-2 px-3 rounded-xl border text-xs sm:text-sm font-bold font-mono transition ${
+                onClick={() => handleContractsChange(qty)}
+                className={`flex-1 py-2 px-3 rounded-xl border text-xs sm:text-sm font-bold font-mono transition cursor-pointer ${
                   contracts === qty
                     ? 'bg-emerald-500 text-zinc-950 border-emerald-400 shadow-md'
                     : 'bg-zinc-950 border-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-900'
                 }`}
               >
-                +{qty}
+                {qty}x
               </button>
             ))}
           </div>
 
-          {/* Quantitative Mathematics & Quadratic Fee Breakdown */}
+          {/* Financial Economics & Fee Breakdown */}
           <div className="p-5 rounded-2xl bg-zinc-950 border border-zinc-800 space-y-3 text-sm">
             <div className="text-xs text-zinc-400 uppercase tracking-wider font-bold border-b border-zinc-800/80 pb-2 flex items-center justify-between">
               <span>Financial Economics</span>
-              <span className="text-emerald-400">Kalshi Fee Formula Active</span>
+              <span className="text-[11px] font-mono text-emerald-400 font-semibold">Kalshi Fee Formula Active</span>
             </div>
 
             <div className="flex justify-between text-zinc-300">
@@ -235,14 +334,14 @@ export const TradeDrawer: React.FC<TradeDrawerProps> = ({
             <div className="flex justify-between text-zinc-300">
               <span className="flex items-center gap-1.5">
                 <span>Exchange Taker Fee</span>
-                <span className="text-xs text-zinc-500">(0.07 × C × P × [1-P])</span>
+                <span className="text-xs text-zinc-500 font-mono">(0.07 × C × P × [1-P])</span>
               </span>
               <span className="text-amber-400 font-mono font-bold">+${takerFee.toFixed(2)}</span>
             </div>
 
             <div className="flex justify-between text-white font-black text-base pt-2 border-t border-zinc-800">
               <span>Total Capital Committed</span>
-              <span className="text-emerald-400 font-mono">${totalCost.toFixed(2)}</span>
+              <span className="text-emerald-400 font-mono text-lg">${totalCost.toFixed(2)}</span>
             </div>
 
             <div className="grid grid-cols-2 gap-3 pt-2 text-xs">
@@ -262,7 +361,7 @@ export const TradeDrawer: React.FC<TradeDrawerProps> = ({
             <button
               type="submit"
               disabled={isExecuting}
-              className={`w-full h-16 px-6 rounded-2xl font-black text-base sm:text-lg shadow-xl transition flex items-center justify-center gap-3 active:scale-95 ${
+              className={`w-full h-16 px-6 rounded-2xl font-black text-base sm:text-lg shadow-xl transition flex items-center justify-center gap-3 active:scale-95 cursor-pointer ${
                 side === 'yes'
                   ? 'bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-zinc-950 shadow-emerald-500/25'
                   : 'bg-gradient-to-r from-rose-500 to-pink-600 hover:from-rose-400 hover:to-pink-500 text-white shadow-rose-500/25'
@@ -271,7 +370,7 @@ export const TradeDrawer: React.FC<TradeDrawerProps> = ({
               {isExecuting ? (
                 <>
                   <div className="w-5 h-5 border-3 border-current border-t-transparent rounded-full animate-spin" />
-                  <span>Submitting Order to Engine...</span>
+                  <span>Submitting Order to Kalshi...</span>
                 </>
               ) : (
                 <>
