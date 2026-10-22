@@ -250,20 +250,22 @@ export const App: React.FC = () => {
       )}
 
       {/* Desktop Navigation Tabs (Hidden on mobile where MobileNav handles it) */}
-      <div className="hidden sm:block border-b border-zinc-800/80 bg-[#0c1114]/80 backdrop-blur-md px-6 py-2 sticky top-[57px] z-30">
-        <div className="max-w-7xl mx-auto flex flex-wrap items-center gap-2">
+      <div className="hidden sm:block border-b border-zinc-800 bg-[#0c1114]/90 backdrop-blur-md px-6 py-3 sticky top-[73px] z-30 shadow-md">
+        <div className="max-w-7xl mx-auto flex flex-wrap items-center gap-3">
           <button
             onClick={() => setActiveTab('decision')}
-            className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-mono font-semibold transition ${
+            className={`flex items-center gap-2.5 px-4 py-2.5 rounded-2xl text-sm sm:text-base font-bold transition ${
               activeTab === 'decision'
-                ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 shadow-sm'
-                : 'text-zinc-400 hover:text-white hover:bg-zinc-800/60'
+                ? 'bg-emerald-500 text-zinc-950 font-black shadow-lg shadow-emerald-500/20'
+                : 'text-zinc-300 hover:text-white hover:bg-zinc-800/80'
             }`}
           >
-            <Compass className="w-3.5 h-3.5" />
-            <span>DECISION DESK</span>
+            <Compass className="w-5 h-5" />
+            <span>Top Trade</span>
             {opportunities.length > 0 && (
-              <span className="px-1.5 py-0.2 bg-emerald-500 text-zinc-950 text-[10px] rounded-full font-bold">
+              <span className={`px-2 py-0.5 text-xs rounded-full font-black ${
+                activeTab === 'decision' ? 'bg-zinc-950 text-emerald-400' : 'bg-emerald-500 text-zinc-950'
+              }`}>
                 {opportunities.length}
               </span>
             )}
@@ -271,91 +273,93 @@ export const App: React.FC = () => {
 
           <button
             onClick={() => setActiveTab('markets')}
-            className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-mono font-semibold transition ${
+            className={`flex items-center gap-2.5 px-4 py-2.5 rounded-2xl text-sm sm:text-base font-bold transition ${
               activeTab === 'markets'
-                ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 shadow-sm'
-                : 'text-zinc-400 hover:text-white hover:bg-zinc-800/60'
+                ? 'bg-emerald-500 text-zinc-950 font-black shadow-lg shadow-emerald-500/20'
+                : 'text-zinc-300 hover:text-white hover:bg-zinc-800/80'
             }`}
           >
-            <Layers className="w-3.5 h-3.5" />
-            <span>MARKET BROWSER</span>
-            <span className="text-[10px] text-zinc-500 font-mono">({markets.length})</span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab('domains')}
-            className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-mono font-semibold transition ${
-              activeTab === 'domains'
-                ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 shadow-sm'
-                : 'text-zinc-400 hover:text-white hover:bg-zinc-800/60'
-            }`}
-          >
-            <Globe className="w-3.5 h-3.5" />
-            <span>DOMAIN INTELLIGENCE</span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab('agents')}
-            className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-mono font-semibold transition ${
-              activeTab === 'agents'
-                ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 shadow-sm'
-                : 'text-zinc-400 hover:text-white hover:bg-zinc-800/60'
-            }`}
-          >
-            <Bot className="w-3.5 h-3.5" />
-            <span>AGENT COMMAND ({agents.length || 16})</span>
+            <Layers className="w-5 h-5" />
+            <span>All Markets</span>
+            <span className={`text-xs font-mono font-semibold ${
+              activeTab === 'markets' ? 'text-zinc-900' : 'text-zinc-400'
+            }`}>({markets.length})</span>
           </button>
 
           <button
             onClick={() => setActiveTab('portfolio')}
-            className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-mono font-semibold transition ${
+            className={`flex items-center gap-2.5 px-4 py-2.5 rounded-2xl text-sm sm:text-base font-bold transition ${
               activeTab === 'portfolio'
-                ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 shadow-sm'
-                : 'text-zinc-400 hover:text-white hover:bg-zinc-800/60'
+                ? 'bg-emerald-500 text-zinc-950 font-black shadow-lg shadow-emerald-500/20'
+                : 'text-zinc-300 hover:text-white hover:bg-zinc-800/80'
             }`}
           >
-            <Briefcase className="w-3.5 h-3.5" />
-            <span>PORTFOLIO & RISK</span>
+            <Briefcase className="w-5 h-5" />
+            <span>My Portfolio</span>
           </button>
 
           <button
             onClick={() => setActiveTab('feeds')}
-            className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-mono font-semibold transition ${
+            className={`flex items-center gap-2.5 px-4 py-2.5 rounded-2xl text-sm sm:text-base font-bold transition ${
               activeTab === 'feeds'
-                ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 shadow-sm'
-                : 'text-zinc-400 hover:text-white hover:bg-zinc-800/60'
+                ? 'bg-emerald-500 text-zinc-950 font-black shadow-lg shadow-emerald-500/20'
+                : 'text-zinc-300 hover:text-white hover:bg-zinc-800/80'
             }`}
           >
-            <Activity className="w-3.5 h-3.5" />
-            <span>FEED TELEMETRY</span>
+            <Activity className="w-5 h-5" />
+            <span>Data Feeds</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('agents')}
+            className={`flex items-center gap-2.5 px-4 py-2.5 rounded-2xl text-sm sm:text-base font-bold transition ${
+              activeTab === 'agents'
+                ? 'bg-emerald-500 text-zinc-950 font-black shadow-lg shadow-emerald-500/20'
+                : 'text-zinc-300 hover:text-white hover:bg-zinc-800/80'
+            }`}
+          >
+            <Bot className="w-5 h-5" />
+            <span>AI Agents</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('domains')}
+            className={`flex items-center gap-2.5 px-4 py-2.5 rounded-2xl text-sm sm:text-base font-bold transition ${
+              activeTab === 'domains'
+                ? 'bg-emerald-500 text-zinc-950 font-black shadow-lg shadow-emerald-500/20'
+                : 'text-zinc-300 hover:text-white hover:bg-zinc-800/80'
+            }`}
+          >
+            <Globe className="w-5 h-5" />
+            <span>Intel</span>
           </button>
 
           <button
             onClick={() => setActiveTab('calibration')}
-            className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-mono font-semibold transition ${
+            className={`flex items-center gap-2.5 px-4 py-2.5 rounded-2xl text-sm sm:text-base font-bold transition ${
               activeTab === 'calibration'
-                ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 shadow-sm'
-                : 'text-zinc-400 hover:text-white hover:bg-zinc-800/60'
+                ? 'bg-emerald-500 text-zinc-950 font-black shadow-lg shadow-emerald-500/20'
+                : 'text-zinc-300 hover:text-white hover:bg-zinc-800/80'
             }`}
           >
-            <Target className="w-3.5 h-3.5" />
-            <span>CALIBRATION</span>
+            <Target className="w-5 h-5" />
+            <span>Model Accuracy</span>
           </button>
         </div>
       </div>
 
       {/* Main Workspace Body (with extra bottom padding for mobile navigation) */}
-      <main className="flex-1 p-3 sm:p-6 max-w-7xl w-full mx-auto space-y-6 pb-24 sm:pb-12 relative z-10">
+      <main className="flex-1 p-4 sm:p-8 max-w-7xl w-full mx-auto space-y-8 pb-28 sm:pb-16 relative z-10">
         {activeTab === 'decision' && (
           <div className="space-y-6">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
-                <h2 className="text-sm sm:text-base font-bold text-white uppercase tracking-wider font-mono flex items-center gap-2">
-                  <Compass className="h-4 w-4 text-emerald-400" />
-                  Live Decision Desk
+                <h2 className="text-xl sm:text-2xl font-black text-white flex items-center gap-2.5">
+                  <Compass className="h-6 w-6 text-emerald-400" />
+                  Live Decision Desk &amp; Top Trade
                 </h2>
-                <p className="text-[11px] sm:text-xs text-zinc-500 font-mono">
-                  Real-time focal point for institutional recommendations with conservative EV validation
+                <p className="text-sm sm:text-base text-zinc-400 mt-1">
+                  Continuously scans 1,000+ Kalshi markets for statistically defensible edges exceeding exchange fees and uncertainty bounds.
                 </p>
               </div>
 

@@ -1,5 +1,5 @@
 import React from 'react';
-import { ShieldCheck, AlertCircle, ArrowUpRight, TrendingUp, DollarSign, Clock, HelpCircle } from 'lucide-react';
+import { ShieldCheck, AlertCircle, ArrowUpRight, TrendingUp, DollarSign, Clock, HelpCircle, CheckCircle2, Sparkles } from 'lucide-react';
 import type { BestTradeResponse } from '../types';
 
 interface BestTradeCardProps {
@@ -15,14 +15,14 @@ export const BestTradeCard: React.FC<BestTradeCardProps> = ({
 }) => {
   if (!data) {
     return (
-      <div className="bg-[#0e1417] border border-zinc-800 rounded-xl p-6 animate-pulse">
-        <div className="h-6 w-48 bg-zinc-800 rounded mb-4" />
-        <div className="h-20 bg-zinc-800/50 rounded mb-4" />
-        <div className="grid grid-cols-4 gap-4">
-          <div className="h-12 bg-zinc-800/40 rounded" />
-          <div className="h-12 bg-zinc-800/40 rounded" />
-          <div className="h-12 bg-zinc-800/40 rounded" />
-          <div className="h-12 bg-zinc-800/40 rounded" />
+      <div className="bg-[#0e1417] border border-zinc-800 rounded-3xl p-8 animate-pulse">
+        <div className="h-8 w-64 bg-zinc-800 rounded-xl mb-4" />
+        <div className="h-24 bg-zinc-800/50 rounded-2xl mb-6" />
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="h-16 bg-zinc-800/40 rounded-2xl" />
+          <div className="h-16 bg-zinc-800/40 rounded-2xl" />
+          <div className="h-16 bg-zinc-800/40 rounded-2xl" />
+          <div className="h-16 bg-zinc-800/40 rounded-2xl" />
         </div>
       </div>
     );
@@ -30,32 +30,40 @@ export const BestTradeCard: React.FC<BestTradeCardProps> = ({
 
   if (!data.available || !data.opportunity) {
     return (
-      <div className="bg-[#0e1417] border border-zinc-800 rounded-xl p-6 relative overflow-hidden">
-        <div className="flex items-start gap-4">
-          <div className="p-3 rounded-lg bg-zinc-900 border border-zinc-800 text-zinc-400">
-            <HelpCircle className="h-6 w-6 text-zinc-400" />
+      <div className="bg-[#0e1417] border-2 border-zinc-800 hover:border-zinc-700 rounded-3xl p-6 sm:p-8 relative overflow-hidden shadow-xl">
+        <div className="flex flex-col sm:flex-row items-start gap-5">
+          <div className="p-4 rounded-2xl bg-zinc-900 border border-zinc-800 text-emerald-400 shrink-0">
+            <Sparkles className="h-8 w-8 text-emerald-400" />
           </div>
-          <div className="flex-1">
-            <div className="flex items-center gap-2 mb-1">
-              <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-zinc-800/80 text-zinc-400 border border-zinc-700">
-                CIO DECISION
+          <div className="flex-1 space-y-3">
+            <div className="flex items-center gap-3">
+              <span className="text-xs font-black px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 uppercase tracking-wider">
+                QUANTITATIVE CHIEF INVESTMENT OFFICER
               </span>
-              <span className="text-xs font-mono text-zinc-500">
+              <span className="text-xs text-zinc-400 font-mono">
                 {data.checked_at ? new Date(data.checked_at).toLocaleTimeString() : ''}
               </span>
             </div>
-            <h2 className="text-xl font-bold text-white tracking-tight mb-2">
-              NO QUALIFIED TRADE AVAILABLE
+            
+            <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
+              PATIENT DISCIPLINE: STANDING BY FOR DEFENSIVE EDGE
             </h2>
-            <p className="text-sm text-zinc-400 max-w-2xl leading-relaxed">
+            
+            <p className="text-base sm:text-lg text-zinc-300 max-w-3xl leading-relaxed">
               {data.reason ||
-                'The quantitative forecasting engine has analyzed all active Kalshi markets. No contract currently exhibits a statistically defensible edge exceeding exchange fees, slippage, and calibrated uncertainty bounds.'}
+                'Our 16 quantitative agents are continuously evaluating 1,000+ live contracts across weather, sports, and crypto. We only alert you when a trade has a mathematically proven advantage exceeding Kalshi trading fees, slippage, and uncertainty bounds.'}
             </p>
-            <div className="mt-4 pt-4 border-t border-zinc-800/60 flex flex-wrap items-center gap-6 text-xs font-mono text-zinc-500">
-              <span>Risk Policy: Capital Preservation</span>
-              <span>Min Conservative Edge: $0.03/contract</span>
-              <span>Min Net ROI: 5.0%</span>
-              <span className="text-emerald-500">System Standing By For Valid Discrepancies</span>
+
+            <div className="mt-6 pt-5 border-t border-zinc-800/80 flex flex-wrap items-center gap-6 text-sm text-zinc-300 font-medium">
+              <span className="flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 text-emerald-400" /> Capital Preservation Mode Active
+              </span>
+              <span className="flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 text-emerald-400" /> Min Advantage: +3.0¢ / contract
+              </span>
+              <span className="flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 text-emerald-400" /> Min Net Return: +5.0% ROI
+              </span>
             </div>
           </div>
         </div>
@@ -67,45 +75,47 @@ export const BestTradeCard: React.FC<BestTradeCardProps> = ({
   const isYes = opp.action === 'BUY_YES';
 
   return (
-    <div className="bg-[#0e1417] border border-emerald-500/40 rounded-xl p-6 shadow-lg shadow-emerald-950/20 relative overflow-hidden">
+    <div className="bg-[#0e1417] border-2 border-emerald-500/60 rounded-3xl p-6 sm:p-8 shadow-2xl shadow-emerald-950/30 relative overflow-hidden">
       {/* Background Glow */}
-      <div className="absolute top-0 right-0 w-96 h-96 bg-emerald-500/5 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute top-0 right-0 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
 
       {/* Header Badge */}
-      <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
-        <div className="flex items-center gap-2">
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 font-mono text-xs font-bold uppercase tracking-wider">
-            <ShieldCheck className="h-3.5 w-3.5" />
-            BEST LIVE OPPORTUNITY
+      <div className="flex flex-wrap items-center justify-between gap-4 mb-5">
+        <div className="flex items-center gap-3">
+          <span className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-500 text-zinc-950 text-xs sm:text-sm font-black uppercase tracking-wider shadow-lg">
+            <ShieldCheck className="h-4 w-4" />
+            TOP MATHEMATICAL OPPORTUNITY
           </span>
-          <span className="font-mono text-xs text-zinc-500">
+          <span className="text-xs sm:text-sm text-zinc-400 font-mono">
             Expires: {data.expires_at ? new Date(data.expires_at).toLocaleTimeString() : '120s'}
           </span>
         </div>
-        <div className="flex items-center gap-2 font-mono text-xs text-zinc-400">
+        <div className="flex items-center gap-2 text-xs sm:text-sm text-zinc-300 font-semibold font-mono">
           <span>Model: {opp.model}</span>
         </div>
       </div>
 
       {/* Contract & Action Row */}
-      <div className="flex flex-wrap items-start justify-between gap-4 mb-6">
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 mb-8">
         <div>
-          <div className="flex items-center gap-2 mb-1">
-            <span className="font-mono text-xs text-emerald-400 font-semibold">{opp.ticker}</span>
+          <div className="flex items-center gap-2.5 mb-2">
+            <span className="text-xs font-mono font-bold text-emerald-400 px-2.5 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/30">
+              {opp.ticker}
+            </span>
             <span className="text-xs text-zinc-500">•</span>
-            <span className="font-mono text-xs text-zinc-400 uppercase">{opp.category}</span>
+            <span className="text-xs font-bold text-zinc-400 uppercase tracking-wider">{opp.category}</span>
           </div>
-          <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
+          <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight leading-tight">
             {opp.ticker}
           </h2>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-4">
           <div
-            className={`px-4 py-2 rounded-lg font-mono font-bold text-base tracking-wider ${
+            className={`px-5 py-3 rounded-2xl font-black text-lg sm:text-xl tracking-wider shadow-md ${
               isYes
-                ? 'bg-emerald-500/20 border border-emerald-500/60 text-emerald-300'
-                : 'bg-indigo-500/20 border border-indigo-500/60 text-indigo-300'
+                ? 'bg-emerald-500 text-zinc-950'
+                : 'bg-rose-500 text-white'
             }`}
           >
             {opp.action}
@@ -121,70 +131,57 @@ export const BestTradeCard: React.FC<BestTradeCardProps> = ({
               )
             }
             disabled={isExecuting}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-bold text-sm tracking-wide transition shadow disabled:opacity-50"
+            className="h-14 px-8 rounded-2xl bg-white hover:bg-zinc-200 text-zinc-950 font-black text-base sm:text-lg transition active:scale-95 flex items-center gap-2.5 shadow-xl disabled:opacity-50"
           >
             <span>Execute Trade</span>
-            <ArrowUpRight className="h-4 w-4" />
+            <ArrowUpRight className="h-5 w-5" />
           </button>
         </div>
       </div>
 
-      {/* Metrics Grid */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-6 font-mono">
-        <div className="bg-zinc-900/80 border border-zinc-800 rounded-lg p-3">
-          <span className="text-[10px] text-zinc-500 uppercase block">Executable Entry</span>
-          <span className="text-lg font-bold text-white">${opp.entry_price}</span>
-          <span className="text-[10px] text-zinc-500 block">Max: ${opp.max_entry_price}</span>
+      {/* Key Metric Blocks (Big & Clear) */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
+        <div className="bg-[#080c0e] border border-zinc-800 rounded-2xl p-5 shadow-sm">
+          <div className="text-xs text-zinc-400 font-bold uppercase tracking-wider mb-1">
+            Conservative Edge
+          </div>
+          <div className="text-2xl sm:text-3xl font-black text-emerald-400 font-mono">
+            +${parseFloat(opp.conservative_edge).toFixed(3)}
+          </div>
+          <div className="text-xs text-zinc-400 mt-1 font-medium">After all exchange fees</div>
         </div>
 
-        <div className="bg-zinc-900/80 border border-zinc-800 rounded-lg p-3">
-          <span className="text-[10px] text-zinc-500 uppercase block">Estimated Prob</span>
-          <span className="text-lg font-bold text-emerald-400">
-            {(parseFloat(opp.estimated_probability) * 100).toFixed(1)}%
-          </span>
-          <span className="text-[10px] text-zinc-500 block">
-            Cons: {(parseFloat(opp.conservative_probability) * 100).toFixed(1)}%
-          </span>
-        </div>
-
-        <div className="bg-zinc-900/80 border border-zinc-800 rounded-lg p-3">
-          <span className="text-[10px] text-zinc-500 uppercase block">Market Prob</span>
-          <span className="text-lg font-bold text-zinc-300">
-            {opp.market_probability
-              ? `${(parseFloat(opp.market_probability) * 100).toFixed(1)}%`
-              : 'N/A'}
-          </span>
-          <span className="text-[10px] text-zinc-500 block">Order Book Mid</span>
-        </div>
-
-        <div className="bg-zinc-900/80 border border-zinc-800 rounded-lg p-3">
-          <span className="text-[10px] text-zinc-500 uppercase block">Net Expected ROI</span>
-          <span className="text-lg font-bold text-emerald-400">
+        <div className="bg-[#080c0e] border border-zinc-800 rounded-2xl p-5 shadow-sm">
+          <div className="text-xs text-zinc-400 font-bold uppercase tracking-wider mb-1">
+            Net Return (ROI)
+          </div>
+          <div className="text-2xl sm:text-3xl font-black text-white font-mono">
             +{(parseFloat(opp.net_roi) * 100).toFixed(1)}%
-          </span>
-          <span className="text-[10px] text-zinc-500 block">
-            Edge: {parseFloat(opp.conservative_edge) >= 0 ? '+' : ''}
-            ${parseFloat(opp.conservative_edge).toFixed(3)}
-          </span>
+          </div>
+          <div className="text-xs text-zinc-400 mt-1 font-medium">Expected net yield</div>
         </div>
 
-        <div className="bg-zinc-900/80 border border-zinc-800 rounded-lg p-3">
-          <span className="text-[10px] text-zinc-500 uppercase block">Risk Allocation</span>
-          <span className="text-lg font-bold text-white">${opp.recommended_stake}</span>
-          <span className="text-[10px] text-zinc-500 block">{opp.recommended_contracts} contracts</span>
+        <div className="bg-[#080c0e] border border-zinc-800 rounded-2xl p-5 shadow-sm">
+          <div className="text-xs text-zinc-400 font-bold uppercase tracking-wider mb-1">
+            Model vs Market
+          </div>
+          <div className="text-xl sm:text-2xl font-black text-sky-400 font-mono">
+            {(parseFloat(opp.model_prob) * 100).toFixed(0)}% <span className="text-xs text-zinc-500 font-normal">vs</span> {(parseFloat(opp.market_price) * 100).toFixed(0)}¢
+          </div>
+          <div className="text-xs text-zinc-400 mt-1 font-medium">True probability advantage</div>
         </div>
 
-        <div className="bg-zinc-900/80 border border-zinc-800 rounded-lg p-3">
-          <span className="text-[10px] text-zinc-500 uppercase block">Max Profit / Loss</span>
-          <span className="text-lg font-bold text-emerald-400">+${opp.max_profit}</span>
-          <span className="text-[10px] text-rose-400 block">-${opp.max_loss}</span>
+        <div className="bg-[#080c0e] border border-zinc-800 rounded-2xl p-5 shadow-sm">
+          <div className="text-xs text-zinc-400 font-bold uppercase tracking-wider mb-1">
+            Suggested Size
+          </div>
+          <div className="text-2xl sm:text-3xl font-black text-emerald-400 font-mono">
+            {opp.recommended_contracts} <span className="text-sm text-zinc-400 font-bold">contracts</span>
+          </div>
+          <div className="text-xs text-zinc-400 mt-1 font-medium">
+            Risk: ${(parseFloat(opp.max_entry_price) * parseInt(opp.recommended_contracts)).toFixed(2)}
+          </div>
         </div>
-      </div>
-
-      {/* Evidence Explanation */}
-      <div className="p-3.5 rounded-lg bg-zinc-900/50 border border-zinc-800/80 text-xs text-zinc-300 leading-relaxed font-sans">
-        <span className="font-semibold text-white mr-1.5 font-mono">EVIDENCE & RATIONALE:</span>
-        {opp.evidence_summary}
       </div>
     </div>
   );
