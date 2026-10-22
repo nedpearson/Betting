@@ -7,6 +7,7 @@ import json
 from collections.abc import AsyncGenerator
 from datetime import UTC, datetime
 from decimal import Decimal
+from pathlib import Path
 from typing import Any
 
 import httpx
@@ -289,6 +290,26 @@ def create_app(
                     agent_system.rest.signer = signer
                     agent_system.rest.settings.kalshi_api_key_id = key_id
                     agent_system.rest.settings.kalshi_private_key_pem = SecretStr(private_key_pem)
+
+                    # Persist key safely to kalshi_key.pem and update .env
+                    try:
+                        key_file = Path("kalshi_key.pem")
+                        key_file.write_text(private_key_pem.strip() + "\n", encoding="utf-8")
+                        env_file = Path(".env")
+                        if env_file.exists():
+                            env_lines = env_file.read_text(encoding="utf-8").splitlines()
+                            updated_lines = []
+                            for eline in env_lines:
+                                if eline.startswith("BOI_KALSHI_KEY_ID="):
+                                    updated_lines.append(f'BOI_KALSHI_KEY_ID="{key_id}"')
+                                elif eline.startswith("BOI_KALSHI_PRIVATE_KEY_PATH="):
+                                    updated_lines.append('BOI_KALSHI_PRIVATE_KEY_PATH="kalshi_key.pem"')
+                                else:
+                                    updated_lines.append(eline)
+                            env_file.write_text("\n".join(updated_lines) + "\n", encoding="utf-8")
+                    except Exception as persist_err:
+                        logger.warning("Could not persist key to disk: %s", persist_err)
+
                     return {
                         "success": True,
                         "connected": True,

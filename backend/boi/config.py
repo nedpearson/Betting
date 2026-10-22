@@ -13,7 +13,7 @@ from enum import StrEnum
 from functools import lru_cache
 from pathlib import Path
 
-from pydantic import Field, SecretStr
+from pydantic import AliasChoices, Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 LIVE_CONFIRM_PHRASE = "I AUTHORIZE LIVE KALSHI ORDERS AND ACCEPT THE RISK OF LOSS"
@@ -47,9 +47,18 @@ class Settings(BaseSettings):
 
     # --- Kalshi ---
     kalshi_env: KalshiEnv = KalshiEnv.PROD
-    kalshi_api_key_id: str | None = None
-    kalshi_private_key_path: Path | None = None
-    kalshi_private_key_pem: SecretStr | None = None
+    kalshi_api_key_id: str | None = Field(
+        default=None,
+        validation_alias=AliasChoices("kalshi_api_key_id", "boi_kalshi_key_id", "boi_kalshi_api_key_id"),
+    )
+    kalshi_private_key_path: Path | None = Field(
+        default=None,
+        validation_alias=AliasChoices("kalshi_private_key_path", "boi_kalshi_private_key_path"),
+    )
+    kalshi_private_key_pem: SecretStr | None = Field(
+        default=None,
+        validation_alias=AliasChoices("kalshi_private_key_pem", "boi_kalshi_private_key_pem"),
+    )
     kalshi_rest_read_per_sec: float = Field(default=8.0, description="Client-side read throttle (below Basic tier)")
     kalshi_rest_write_per_sec: float = 4.0
 
@@ -119,13 +128,23 @@ class Settings(BaseSettings):
 
     @property
     def has_kalshi_credentials(self) -> bool:
-        return bool(self.kalshi_api_key_id and (self.kalshi_private_key_path or self.kalshi_private_key_pem))
+        return bool(self.kalshi_api_key_id and self.load_private_key_pem() is not None)
 
     def load_private_key_pem(self) -> bytes | None:
         if self.kalshi_private_key_pem:
-            return self.kalshi_private_key_pem.get_secret_value().replace("\\n", "\n").encode()
-        if self.kalshi_private_key_path and self.kalshi_private_key_path.exists():
-            return self.kalshi_private_key_path.read_bytes()
+            val = self.kalshi_private_key_pem.get_secret_value()
+            if val and val.strip():
+                return val.replace("\\n", "\n").encode()
+        if (
+            self.kalshi_private_key_path
+            and str(self.kalshi_private_key_path).strip()
+            and str(self.kalshi_private_key_path) != "."
+        ):
+            try:
+                if self.kalshi_private_key_path.is_file():
+                    return self.kalshi_private_key_path.read_bytes()
+            except Exception:
+                pass
         return None
 
     @property
