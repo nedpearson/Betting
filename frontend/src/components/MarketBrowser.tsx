@@ -15,7 +15,6 @@ import {
   DollarSign
 } from 'lucide-react';
 import { fetchMarketDetail } from '../api';
-import { TradeDrawer } from './TradeDrawer';
 
 interface MarketBrowserProps {
   markets: Market[];
@@ -32,7 +31,6 @@ export const MarketBrowser: React.FC<MarketBrowserProps> = ({
   const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
   const [viewMode, setViewMode] = useState<'cards' | 'table'>('cards');
   const [selectedMarketForDetail, setSelectedMarketForDetail] = useState<any | null>(null);
-  const [tradeDrawerMarket, setTradeDrawerMarket] = useState<Market | null>(null);
   const [isLoadingDetail, setIsLoadingDetail] = useState(false);
 
   const categories = ['ALL', 'Climate and Weather', 'Crypto', 'Sports', 'Economics'];
@@ -189,8 +187,11 @@ export const MarketBrowser: React.FC<MarketBrowserProps> = ({
                 {/* Card Bottom: Big Actionable YES / NO Buttons */}
                 <div className="grid grid-cols-2 gap-3 pt-3 border-t border-zinc-800">
                   <button
-                    onClick={() => setTradeDrawerMarket(m)}
-                    className="py-3 px-3 rounded-2xl bg-emerald-500/15 hover:bg-emerald-500/25 border-2 border-emerald-500/40 text-emerald-300 font-mono transition flex flex-col items-center justify-center active:scale-95 shadow-sm group-hover:border-emerald-500"
+                    onClick={() => {
+                      const p = m.yes_ask ? parseFloat(m.yes_ask) : 0.50;
+                      onExecuteTrade?.(m.ticker, 'yes', 10, p);
+                    }}
+                    className="py-3 px-3 rounded-2xl bg-emerald-500/15 hover:bg-emerald-500/25 border-2 border-emerald-500/40 text-emerald-300 font-mono transition flex flex-col items-center justify-center active:scale-95 shadow-sm group-hover:border-emerald-500 cursor-pointer"
                   >
                     <span className="text-xs font-black uppercase text-emerald-400">BUY YES</span>
                     <span className="text-base sm:text-lg font-black text-white mt-0.5">
@@ -199,8 +200,11 @@ export const MarketBrowser: React.FC<MarketBrowserProps> = ({
                   </button>
 
                   <button
-                    onClick={() => setTradeDrawerMarket(m)}
-                    className="py-3 px-3 rounded-2xl bg-rose-500/15 hover:bg-rose-500/25 border-2 border-rose-500/40 text-rose-300 font-mono transition flex flex-col items-center justify-center active:scale-95 shadow-sm group-hover:border-rose-500"
+                    onClick={() => {
+                      const p = m.yes_bid ? parseFloat((1.0 - parseFloat(m.yes_bid)).toFixed(2)) : 0.50;
+                      onExecuteTrade?.(m.ticker, 'no', 10, p);
+                    }}
+                    className="py-3 px-3 rounded-2xl bg-rose-500/15 hover:bg-rose-500/25 border-2 border-rose-500/40 text-rose-300 font-mono transition flex flex-col items-center justify-center active:scale-95 shadow-sm group-hover:border-rose-500 cursor-pointer"
                   >
                     <span className="text-xs font-black uppercase text-rose-400">BUY NO</span>
                     <span className="text-base sm:text-lg font-black text-white mt-0.5">
@@ -267,8 +271,11 @@ export const MarketBrowser: React.FC<MarketBrowserProps> = ({
                     </td>
                     <td className="py-3 px-4 text-right">
                       <button
-                        onClick={() => setTradeDrawerMarket(m)}
-                        className="px-3 py-1.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 font-semibold transition"
+                        onClick={() => {
+                          const p = m.yes_ask ? parseFloat(m.yes_ask) : 0.50;
+                          onExecuteTrade?.(m.ticker, 'yes', 10, p);
+                        }}
+                        className="px-3 py-1.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 font-semibold transition cursor-pointer"
                       >
                         Trade
                       </button>
@@ -280,18 +287,6 @@ export const MarketBrowser: React.FC<MarketBrowserProps> = ({
           </div>
         </div>
       )}
-
-      {/* Trade Bottom Sheet Drawer */}
-      <TradeDrawer
-        market={tradeDrawerMarket}
-        isOpen={Boolean(tradeDrawerMarket)}
-        onClose={() => setTradeDrawerMarket(null)}
-        availableCash={availableCash}
-        onExecute={(t, s, c, p) => {
-          if (onExecuteTrade) onExecuteTrade(t, s, c, p);
-          setTradeDrawerMarket(null);
-        }}
-      />
 
       {/* Market Order Book Detail Modal */}
       {selectedMarketForDetail && (
@@ -357,10 +352,13 @@ export const MarketBrowser: React.FC<MarketBrowserProps> = ({
               <button
                 onClick={() => {
                   const m = markets.find(x => x.ticker === selectedMarketForDetail.ticker);
-                  if (m) setTradeDrawerMarket(m);
+                  if (m) {
+                    const p = m.yes_ask ? parseFloat(m.yes_ask) : 0.50;
+                    onExecuteTrade?.(m.ticker, 'yes', 10, p);
+                  }
                   setSelectedMarketForDetail(null);
                 }}
-                className="w-full py-2.5 px-4 rounded-xl bg-emerald-500 text-zinc-950 font-bold font-mono text-xs hover:bg-emerald-400 transition"
+                className="w-full py-2.5 px-4 rounded-xl bg-emerald-500 text-zinc-950 font-bold font-mono text-xs hover:bg-emerald-400 transition cursor-pointer"
               >
                 Open Order Execution
               </button>

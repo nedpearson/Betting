@@ -153,39 +153,52 @@ export const TradeDrawer: React.FC<TradeDrawerProps> = ({
         </div>
 
         {/* Order Form Body */}
-        <form onSubmit={handleSubmit} className="p-5 sm:p-6 overflow-y-auto space-y-5 flex-1">
-          
-          {/* Side Selector (BUY YES vs BUY NO) */}
-          <div className="grid grid-cols-2 gap-3 p-1.5 bg-zinc-950 rounded-2xl border border-zinc-800">
-            <button
-              type="button"
-              onClick={() => handleSideToggle('yes')}
-              className={`py-4 rounded-xl text-sm sm:text-base font-black transition flex flex-col items-center justify-center gap-1 cursor-pointer ${
-                side === 'yes'
-                  ? 'bg-emerald-500 text-zinc-950 shadow-lg shadow-emerald-500/30'
-                  : 'text-zinc-400 hover:text-white'
-              }`}
-            >
-              <span>BUY YES</span>
-              <span className="text-xs font-semibold opacity-90 font-mono">
-                {market.yes_ask ? `@ $${market.yes_ask}` : 'Market Ask'}
-              </span>
-            </button>
-            <button
-              type="button"
-              onClick={() => handleSideToggle('no')}
-              className={`py-4 rounded-xl text-sm sm:text-base font-black transition flex flex-col items-center justify-center gap-1 cursor-pointer ${
-                side === 'no'
-                  ? 'bg-rose-500 text-white shadow-lg shadow-rose-500/30'
-                  : 'text-zinc-400 hover:text-white'
-              }`}
-            >
-              <span>BUY NO</span>
-              <span className="text-xs font-semibold opacity-90 font-mono">
-                {market.yes_bid ? `@ $${(1.0 - parseFloat(market.yes_bid)).toFixed(2)}` : 'Market Bid'}
-              </span>
-            </button>
-          </div>
+        <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
+          <div className="p-5 sm:p-6 overflow-y-auto space-y-4 flex-1">
+            
+            {/* Side Selector (Outcome: YES vs NO) */}
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between text-xs text-zinc-400 font-mono">
+                <span className="font-bold text-zinc-300">1. CHOOSE OUTCOME</span>
+                <span className="text-[11px] text-zinc-500">Selected: {side.toUpperCase()}</span>
+              </div>
+              <div className="grid grid-cols-2 gap-3 p-1.5 bg-zinc-950 rounded-2xl border border-zinc-800">
+                <button
+                  type="button"
+                  onClick={() => handleSideToggle('yes')}
+                  className={`py-3.5 rounded-xl text-sm font-black transition flex flex-col items-center justify-center gap-0.5 cursor-pointer ${
+                    side === 'yes'
+                      ? 'bg-emerald-500 text-zinc-950 shadow-lg shadow-emerald-500/25 ring-2 ring-emerald-400'
+                      : 'text-zinc-400 hover:text-white hover:bg-zinc-900/60'
+                  }`}
+                >
+                  <div className="flex items-center gap-1.5">
+                    <CheckCircle2 className={`w-4 h-4 ${side === 'yes' ? 'opacity-100' : 'opacity-0'}`} />
+                    <span>OUTCOME: YES</span>
+                  </div>
+                  <span className="text-xs font-semibold opacity-90 font-mono">
+                    {market.yes_ask ? `@ $${market.yes_ask}` : 'Market Ask'}
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleSideToggle('no')}
+                  className={`py-3.5 rounded-xl text-sm font-black transition flex flex-col items-center justify-center gap-0.5 cursor-pointer ${
+                    side === 'no'
+                      ? 'bg-rose-500 text-white shadow-lg shadow-rose-500/25 ring-2 ring-rose-400'
+                      : 'text-zinc-400 hover:text-white hover:bg-zinc-900/60'
+                  }`}
+                >
+                  <div className="flex items-center gap-1.5">
+                    <CheckCircle2 className={`w-4 h-4 ${side === 'no' ? 'opacity-100' : 'opacity-0'}`} />
+                    <span>OUTCOME: NO</span>
+                  </div>
+                  <span className="text-xs font-semibold opacity-90 font-mono">
+                    {market.yes_bid ? `@ $${(1.0 - parseFloat(market.yes_bid)).toFixed(2)}` : 'Market Bid'}
+                  </span>
+                </button>
+              </div>
+            </div>
 
           {/* Amount to Bet ($) Section - Primary Control */}
           <div className="p-4 sm:p-5 rounded-2xl bg-zinc-950 border-2 border-emerald-500/40 space-y-3 shadow-lg shadow-emerald-950/20">
@@ -360,32 +373,35 @@ export const TradeDrawer: React.FC<TradeDrawerProps> = ({
             </div>
           </div>
 
-          {/* Big Action Submit Button */}
-          <div className="pt-2">
+          </div>
+
+          {/* Sticky Action Footer - Always visible regardless of screen height */}
+          <div className="p-4 sm:p-5 bg-[#0b1013] border-t border-zinc-800 shrink-0 shadow-2xl space-y-2">
             <button
               type="submit"
               disabled={isExecuting}
-              className={`w-full h-16 px-6 rounded-2xl font-black text-base sm:text-lg shadow-xl transition flex items-center justify-center gap-3 active:scale-95 cursor-pointer ${
+              className={`w-full h-14 sm:h-16 px-6 rounded-2xl font-black text-base sm:text-lg shadow-xl transition flex items-center justify-center gap-3 active:scale-95 cursor-pointer ${
                 side === 'yes'
-                  ? 'bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-zinc-950 shadow-emerald-500/25'
-                  : 'bg-gradient-to-r from-rose-500 to-pink-600 hover:from-rose-400 hover:to-pink-500 text-white shadow-rose-500/25'
+                  ? 'bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-zinc-950 shadow-emerald-500/30'
+                  : 'bg-gradient-to-r from-rose-500 to-pink-600 hover:from-rose-400 hover:to-pink-500 text-white shadow-rose-500/30'
               } disabled:opacity-50`}
             >
               {isExecuting ? (
                 <>
-                  <div className="w-5 h-5 border-3 border-current border-t-transparent rounded-full animate-spin" />
+                  <div className="w-5 h-5 border-2 border-current border-t-transparent rounded-full animate-spin" />
                   <span>Submitting Order to Kalshi...</span>
                 </>
               ) : (
                 <>
                   <TrendingUp className="w-5 h-5" />
-                  <span>Submit {side.toUpperCase()} Bet (${totalCost.toFixed(2)})</span>
+                  <span>CONFIRM & BUY {side.toUpperCase()} — ${totalCost.toFixed(2)}</span>
                 </>
               )}
             </button>
-            <p className="text-xs text-zinc-400 text-center font-medium mt-2.5">
-              Gated by independent risk governor, maximum drawdown guards, and fractional Kelly limits
-            </p>
+            <div className="flex items-center justify-between text-[11px] text-zinc-400 font-mono px-1">
+              <span>{contracts} contracts @ ${price.toFixed(2)}</span>
+              <span>Potential Return: +${netProfit.toFixed(2)} (+{netRoiPct.toFixed(0)}% ROI)</span>
+            </div>
           </div>
         </form>
       </div>
