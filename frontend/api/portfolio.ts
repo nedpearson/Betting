@@ -36,9 +36,11 @@ export default async function handler(req: any, res: any) {
     });
   }
 
-  const [balRes, posRes] = await Promise.all([
+  const [balRes, posRes, ordersRes, fillsRes] = await Promise.all([
     kalshiRequest('GET', '/portfolio/balance', undefined, creds),
     kalshiRequest('GET', '/portfolio/positions', undefined, creds),
+    kalshiRequest('GET', '/portfolio/orders?limit=25', undefined, creds),
+    kalshiRequest('GET', '/portfolio/fills?limit=25', undefined, creds),
   ]);
 
   if (!balRes.ok) {
@@ -56,6 +58,9 @@ export default async function handler(req: any, res: any) {
       drawdown_pct: '0.00',
       open_positions_count: 0,
       positions: [],
+      resting_orders: [],
+      orders: [],
+      recent_fills: [],
       status: 'error',
       error: balRes.error,
     });
@@ -79,16 +84,68 @@ export default async function handler(req: any, res: any) {
     totalFees += fees;
     totalRealized += realized;
 
+    const contractsNum = posFp >= 100 ? (posFp / 100) : posFp;
+    const avgEntry = contractsNum > 0 ? (exposure / contractsNum) : 0;
+    const maxPayout = contractsNum * 1.0;
+    const potentialProfit = Math.max(0, maxPayout - exposure);
+
     return {
       ticker: p.ticker,
       side: 'yes',
-      contracts: posFp >= 100 ? (posFp / 100).toFixed(2) : posFp.toFixed(2),
-      avg_entry: exposure.toFixed(2),
+      contracts: contractsNum.toFixed(2),
+      avg_entry: avgEntry.toFixed(4),
+      avg_entry_cents: (avgEntry * 100).toFixed(1) + '¢',
       current_mid: null,
       unrealized_pnl: '0.00',
       cost_basis: exposure.toFixed(2),
+      max_payout: maxPayout.toFixed(2),
+      potential_profit: potentialProfit.toFixed(2),
       fees_paid: fees.toFixed(2),
       last_updated: p.last_updated_ts,
+    };
+  });
+
+  // Process Orders
+  const rawOrders = ordersRes.data?.orders || [];
+  const orders = rawOrders.map((o: any) => {
+    const countFp = parseFloat(o.count_fp || o.remaining_count_fp || '0');
+    const count = countFp >= 100 ? (countFp / 100) : countFp;
+    const priceDollars = parseFloat(o.yes_price_dollars || (o.yes_price ? (o.yes_price / 100).toFixed(4) : (o.price || '0')));
+    return {
+      order_id: o.order_id,
+      ticker: o.ticker,
+      side: (o.side || 'yes').toLowerCase(),
+      action: (o.action || 'buy').toLowerCase(),
+      status: o.status || 'resting',
+      contracts: count.toFixed(2),
+      price: priceDollars.toFixed(4),
+      price_cents: (priceDollars * 100).toFixed(1) + '¢',
+      created_time: o.created_time,
+    };
+  });
+
+  const restingOrders = orders.filter((o: any) => o.status === 'resting');
+
+  // Process Fills
+  const rawFills = fillsRes.data?.fills || [];
+  const recentFills = rawFills.map((f: any) => {
+    const countFp = parseFloat(f.count_fp || '0');
+    const count = countFp >= 100 ? (countFp / 100) : countFp;
+    const priceDollars = parseFloat(f.yes_price_dollars || (f.yes_price ? (f.yes_price / 100).toFixed(4) : '0'));
+    const feeDollars = parseFloat(f.fee_cost || '0');
+    return {
+      fill_id: f.fill_id,
+      order_id: f.order_id,
+      trade_id: f.trade_id,
+      ticker: f.ticker,
+      side: (f.side || 'yes').toLowerCase(),
+      action: (f.action || 'buy').toLowerCase(),
+      contracts: count.toFixed(2),
+      price: priceDollars.toFixed(4),
+      price_cents: (priceDollars * 100).toFixed(1) + '¢',
+      fee: feeDollars.toFixed(4),
+      total_cost: ((count * priceDollars) + feeDollars).toFixed(2),
+      created_time: f.created_time,
     };
   });
 
@@ -103,6 +160,9 @@ export default async function handler(req: any, res: any) {
     drawdown_pct: '0.00',
     open_positions_count: positions.length,
     positions,
+    resting_orders: restingOrders,
+    orders: orders.slice(0, 20),
+    recent_fills: recentFills.slice(0, 20),
     status: 'verified_live',
     verified_at: new Date().toISOString(),
   };

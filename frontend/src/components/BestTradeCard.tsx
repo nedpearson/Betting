@@ -12,7 +12,7 @@ import {
   Layers,
   ArrowRight
 } from 'lucide-react';
-import type { BestTradeResponse, Opportunity, Market } from '../types';
+import type { BestTradeResponse, Opportunity, Market, Position } from '../types';
 
 interface BestTradeCardProps {
   data: BestTradeResponse | null;
@@ -21,6 +21,7 @@ interface BestTradeCardProps {
   onSelectIndex?: (index: number) => void;
   marketTitle?: string;
   markets?: Market[];
+  positions?: Position[];
   onExecute: (ticker: string, side: 'yes' | 'no', contracts: number, price: number) => void;
   isExecuting?: boolean;
 }
@@ -32,6 +33,7 @@ export const BestTradeCard: React.FC<BestTradeCardProps> = ({
   onSelectIndex,
   marketTitle,
   markets = [],
+  positions = [],
   onExecute,
   isExecuting,
 }) => {
@@ -221,6 +223,43 @@ export const BestTradeCard: React.FC<BestTradeCardProps> = ({
           <span>Expires: {data?.expires_at ? new Date(data.expires_at).toLocaleTimeString() : 'Active'}</span>
         </div>
       </div>
+
+      {/* Active Position Holding Alert */}
+      {(() => {
+        const holding = positions?.find(p => p.ticker === opp.ticker);
+        if (!holding) return null;
+        const contractsNum = parseFloat(holding.contracts || '0');
+        const costNum = parseFloat(holding.cost_basis || '0');
+        const maxPayoutNum = holding.max_payout ? parseFloat(holding.max_payout) : (contractsNum * 1.0);
+        return (
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-2xl bg-emerald-500/15 border-2 border-emerald-500/40 text-emerald-400 font-mono text-xs gap-3 shadow-lg shadow-emerald-950/20">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-xl bg-emerald-500/20 border border-emerald-500/40 shrink-0">
+                <CheckCircle2 className="w-5 h-5 text-emerald-400" />
+              </div>
+              <div>
+                <span className="font-black text-white text-sm block tracking-wide">
+                  ACTIVE HOLDING: YOU CURRENTLY OWN THIS MARKET
+                </span>
+                <span className="text-zinc-300 text-xs">
+                  Holding <strong className="text-white font-bold">{holding.contracts} contracts</strong> on {holding.side.toUpperCase()} @ {holding.avg_entry_cents || '$' + holding.avg_entry}
+                </span>
+              </div>
+            </div>
+            <div className="flex items-center gap-5 text-xs self-end sm:self-auto bg-zinc-950/70 px-4 py-2 rounded-xl border border-zinc-800">
+              <div>
+                <span className="text-zinc-400 block text-[10px] uppercase font-bold">Invested</span>
+                <span className="text-white font-bold">${costNum.toFixed(2)}</span>
+              </div>
+              <div className="w-px h-6 bg-zinc-800" />
+              <div>
+                <span className="text-zinc-400 block text-[10px] uppercase font-bold">Max Payout</span>
+                <span className="text-emerald-400 font-black">${maxPayoutNum.toFixed(2)}</span>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Contract & Action Row */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">

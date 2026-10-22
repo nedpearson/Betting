@@ -45,7 +45,9 @@ export function signKalshiHeaders(
 ): Record<string, string> {
   const timestamp = Date.now().toString();
   const cleanPath = path.startsWith('/trade-api/v2') ? path : `/trade-api/v2${path}`;
-  const msg = Buffer.from(timestamp + method.toUpperCase() + cleanPath);
+  // Kalshi requires the signature message to contain the path without query string
+  const pathWithoutQuery = cleanPath.split('?')[0];
+  const msg = Buffer.from(timestamp + method.toUpperCase() + pathWithoutQuery);
 
   try {
     const key = crypto.createPrivateKey(privateKeyPem);

@@ -73,6 +73,48 @@ export interface FeedHealth {
   settlement_grade: boolean;
 }
 
+export interface Order {
+  order_id: string;
+  ticker: string;
+  side: string;
+  action: string;
+  status: string;
+  contracts: string;
+  price: string;
+  price_cents?: string;
+  created_time: string;
+}
+
+export interface TradeFill {
+  fill_id: string;
+  order_id?: string;
+  trade_id?: string;
+  ticker: string;
+  side: string;
+  action: string;
+  contracts: string;
+  price: string;
+  price_cents?: string;
+  fee: string;
+  total_cost?: string;
+  created_time: string;
+}
+
+export interface Position {
+  ticker: string;
+  side: string;
+  contracts: string;
+  avg_entry: string;
+  avg_entry_cents?: string;
+  current_mid?: string | null;
+  unrealized_pnl: string;
+  cost_basis: string;
+  max_payout?: string;
+  potential_profit?: string;
+  fees_paid?: string;
+  last_updated?: number | string;
+}
+
 export interface PortfolioSummary {
   starting_bankroll: string;
   available_cash: string;
@@ -83,15 +125,10 @@ export interface PortfolioSummary {
   total_fees: string;
   drawdown_pct: string;
   open_positions_count: number;
-  positions: Array<{
-    ticker: string;
-    side: string;
-    contracts: string;
-    avg_entry: string;
-    current_mid?: string | null;
-    unrealized_pnl: string;
-    cost_basis: string;
-  }>;
+  positions: Position[];
+  resting_orders?: Order[];
+  orders?: Order[];
+  recent_fills?: TradeFill[];
 }
 
 export interface CalibrationReport {
