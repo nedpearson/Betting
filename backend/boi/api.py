@@ -9,17 +9,19 @@ from datetime import UTC, datetime
 from decimal import Decimal
 from typing import Any
 
+import httpx
 from fastapi import Depends, FastAPI, HTTPException, Request, Security, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, StreamingResponse
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from pydantic import BaseModel
+from pydantic import BaseModel, SecretStr
 from sqlalchemy import select
 
 from .agents import AgentSystem
 from .config import Settings, get_settings
 from .db import Database, MarketRecord, OrderRecord, RecommendationRecord
 from .events import EventBus
+from .kalshi.auth import KalshiSigner
 from .money import D
 
 security_bearer = HTTPBearer(auto_error=False)
@@ -240,5 +242,75 @@ def create_app(
                 bus.ui_unsubscribe(q)
 
         return StreamingResponse(generator(), media_type="text/event-stream")
+
+    @app.get("/api/settings/kalshi")
+    async def get_kalshi_status():
+        """Retrieve Kalshi connection status, masked key ID, and real balance if authenticated."""
+        has_key = bool(agent_system.rest_client.signer)
+        key_id = agent_system.rest_client.settings.kalshi_api_key_id
+        masked = (key_id[:6] + "..." + key_id[-4:]) if key_id and len(key_id) > 10 else (key_id or "")
+        balance = None
+        if has_key:
+            try:
+                balance = await agent_system.rest_client.get_balance()
+            except Exception as e:
+                balance = {"error": str(e)}
+        return {
+            "connected": has_key,
+            "key_id": masked,
+            "balance": balance,
+            "mode": cfg.execution_mode.value,
+        }
+
+    @app.post("/api/settings/kalshi")
+    async def configure_kalshi(request: Request):
+        """Verify and dynamically bind Kalshi API credentials."""
+        body = await request.json()
+        key_id = (body.get("key_id") or "").strip()
+        private_key = (body.get("private_key") or "").strip()
+
+        if not key_id or not private_key:
+            raise HTTPException(status_code=400, detail="Key ID and Private Key are required")
+
+        if "BEGIN" not in private_key:
+            private_key_pem = f"-----BEGIN PRIVATE KEY-----\n{private_key}\n-----END PRIVATE KEY-----"
+        else:
+            private_key_pem = private_key
+
+        try:
+            signer = KalshiSigner(key_id=key_id, private_key_pem=private_key_pem)
+            headers = signer.sign_headers("GET", "/trade-api/v2/portfolio/balance")
+            url = f"{cfg.kalshi_rest_url}/portfolio/balance"
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                resp = await client.get(url, headers=headers)
+                if resp.status_code == 200:
+                    balance_data = resp.json()
+                    # Apply credentials in-memory
+                    agent_system.rest_client.signer = signer
+                    agent_system.rest_client.settings.kalshi_api_key_id = key_id
+                    agent_system.rest_client.settings.kalshi_private_key_pem = SecretStr(private_key_pem)
+                    return {
+                        "success": True,
+                        "connected": True,
+                        "key_id": key_id[:8] + "...",
+                        "balance": balance_data.get("balance", 0),
+                        "balance_dollars": str((balance_data.get("balance", 0) / 100.0) if "balance" in balance_data else "0.00"),
+                        "message": "Kalshi account authenticated successfully!",
+                    }
+                else:
+                    return {
+                        "success": False,
+                        "connected": False,
+                        "status_code": resp.status_code,
+                        "error": resp.text,
+                        "message": f"Kalshi authentication failed ({resp.status_code}): {resp.text}",
+                    }
+        except Exception as e:
+            return {
+                "success": False,
+                "connected": False,
+                "error": str(e),
+                "message": f"Cryptographic validation error: {e}",
+            }
 
     return app
