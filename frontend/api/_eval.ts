@@ -82,11 +82,14 @@ async function getWeatherDistribution(code: string, info: { lat: number; lon: nu
     return cached;
   }
 
-  // 1. Try multi-model standard forecast API (GFS + ECMWF + ICON + GEM) - fast, high limits
+  // 1. Try multi-model standard forecast API (GFS + ECMWF + ICON + GEM)
   try {
     const res = await fetch(
       `https://api.open-meteo.com/v1/forecast?latitude=${info.lat}&longitude=${info.lon}&daily=temperature_2m_max&models=gfs_seamless,ecmwf_ifs025,icon_seamless,gem_seamless&temperature_unit=fahrenheit&timezone=${encodeURIComponent(info.tz)}&forecast_days=3`,
-      { cache: 'no-store' }
+      {
+        cache: 'no-store',
+        headers: { 'User-Agent': 'BettingIntelligenceOS/1.0 (contact@bridgebox.ai)' },
+      }
     );
     if (res.ok) {
       const data = await res.json();
@@ -107,7 +110,27 @@ async function getWeatherDistribution(code: string, info: { lat: number; lon: nu
     }
   } catch {}
 
-  // 2. Fallback to cached if available
+  // 2. Fallback to basic operational model if multi-model endpoint returned non-200
+  try {
+    const res = await fetch(
+      `https://api.open-meteo.com/v1/forecast?latitude=${info.lat}&longitude=${info.lon}&daily=temperature_2m_max&temperature_unit=fahrenheit&timezone=${encodeURIComponent(info.tz)}&forecast_days=3`,
+      {
+        cache: 'no-store',
+        headers: { 'User-Agent': 'BettingIntelligenceOS/1.0 (contact@bridgebox.ai)' },
+      }
+    );
+    if (res.ok) {
+      const data = await res.json();
+      const val = data.daily?.temperature_2m_max?.[0];
+      if (typeof val === 'number') {
+        const dist: WeatherDistribution = { mean: val, sigma: 2.0, members: [val], ts: now };
+        weatherCache[code] = dist;
+        return dist;
+      }
+    }
+  } catch {}
+
+  // 3. Fallback to cached if available
   return cached || null;
 }
 
