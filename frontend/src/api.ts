@@ -42,7 +42,7 @@ export async function fetchMarkets(category?: string): Promise<Market[]> {
 }
 
 export async function fetchMarketDetail(ticker: string): Promise<any> {
-  const res = await fetchNoCache(`${BASE}/api/market/${encodeURIComponent(ticker)}?_t=${Date.now()}`);
+  const res = await fetchNoCache(`${BASE}/api/markets?ticker=${encodeURIComponent(ticker)}&_t=${Date.now()}`);
   return res.json();
 }
 

@@ -178,15 +178,68 @@ export default async function handler(req: any, res: any) {
   res.setHeader('Expires', '0');
 
   const category = req.query?.category;
+  const ticker = req.query?.ticker;
 
-  // 1. Try authoritative Python backend
+  // 1. If ticker is requested, return deep Level-2 Order Book and Settlement drill-down
+  if (ticker) {
+    try {
+      const [mktRes, obRes] = await Promise.allSettled([
+        fetch(`https://api.elections.kalshi.com/trade-api/v2/markets/${encodeURIComponent(ticker)}`, { cache: 'no-store' }),
+        fetch(`https://api.elections.kalshi.com/trade-api/v2/markets/${encodeURIComponent(ticker)}/orderbook?depth=50`, { cache: 'no-store' }),
+      ]);
+
+      let marketData: any = {};
+      let rawOb: any = {};
+
+      if (mktRes.status === 'fulfilled' && mktRes.value.ok) {
+        marketData = (await mktRes.value.json()).market || {};
+      }
+
+      if (obRes.status === 'fulfilled' && obRes.value.ok) {
+        const obJson = await obRes.value.json();
+        rawOb = obJson.orderbook_fp || obJson.orderbook || {};
+      }
+
+      const yesBids = rawOb.yes_dollars || rawOb.yes || [];
+      const noBids = rawOb.no_dollars || rawOb.no || [];
+      const derivedYesAsks = noBids.map(([price, count]: [string, string]) => {
+        const p = parseFloat(price);
+        return [(1.0 - p).toFixed(4), count];
+      }).sort((a: any, b: any) => parseFloat(a[0]) - parseFloat(b[0]));
+
+      return res.status(200).json({
+        ticker,
+        title: marketData.title || ticker,
+        category: marketData.category || inferCategory(ticker, marketData.title),
+        market: marketData,
+        orderbook: {
+          yes_bids: yesBids,
+          no_bids: noBids,
+          yes_asks: derivedYesAsks,
+        },
+        volume_24h: marketData.volume_24h_fp || '0',
+        volume_total: marketData.volume_fp || '0',
+        open_interest: marketData.open_interest_fp || '0',
+        rules_primary: marketData.rules_primary || '',
+        rules_secondary: marketData.rules_secondary || '',
+        close_time: marketData.close_time || null,
+        expiration_time: marketData.expiration_time || null,
+        yes_bid: marketData.yes_bid_dollars || (marketData.yes_bid ? (marketData.yes_bid / 100).toFixed(2) : null),
+        yes_ask: marketData.yes_ask_dollars || (marketData.yes_ask ? (marketData.yes_ask / 100).toFixed(2) : null),
+      });
+    } catch (err: any) {
+      return res.status(500).json({ error: err.message });
+    }
+  }
+
+  // 2. Try authoritative Python backend for category list
   const backendQuery = category ? `/api/markets?category=${encodeURIComponent(category)}` : '/api/markets';
   const backendRes = await tryProxyToBackend(backendQuery);
   if (backendRes.proxied && backendRes.data && backendRes.data.markets?.length > 0) {
     return res.status(200).json(backendRes.data);
   }
 
-  // 2. Authoritative live multi-series Kalshi discovery
+  // 3. Authoritative live multi-series Kalshi discovery
   try {
     let markets = await fetchLiveKalshiMarkets();
 
