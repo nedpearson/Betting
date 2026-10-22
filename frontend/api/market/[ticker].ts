@@ -21,34 +21,50 @@ export default async function handler(req: any, res: any) {
   try {
     const [mktRes, obRes] = await Promise.allSettled([
       fetch(`https://api.elections.kalshi.com/trade-api/v2/markets/${encodeURIComponent(ticker)}`, { cache: 'no-store' }),
-      fetch(`https://api.elections.kalshi.com/trade-api/v2/markets/${encodeURIComponent(ticker)}/orderbook?depth=30`, { cache: 'no-store' }),
+      fetch(`https://api.elections.kalshi.com/trade-api/v2/markets/${encodeURIComponent(ticker)}/orderbook?depth=50`, { cache: 'no-store' }),
     ]);
 
     let marketData: any = {};
-    let orderbookData: any = {};
+    let rawOb: any = {};
 
     if (mktRes.status === 'fulfilled' && mktRes.value.ok) {
       marketData = (await mktRes.value.json()).market || {};
     }
 
     if (obRes.status === 'fulfilled' && obRes.value.ok) {
-      orderbookData = (await obRes.value.json()).orderbook || {};
+      const obJson = await obRes.value.json();
+      rawOb = obJson.orderbook_fp || obJson.orderbook || {};
     }
 
-    // Derive YES ask from NO bid complement
-    const noBids = orderbookData.no || [];
-    let derivedYesAsk = null;
+    // Standardize orderbook bids and asks
+    const yesBids = rawOb.yes_dollars || rawOb.yes || [];
+    const noBids = rawOb.no_dollars || rawOb.no || [];
 
-    if (noBids.length > 0) {
-      const bestNoBid = parseFloat(noBids[0][0]);
-      derivedYesAsk = (1.0 - bestNoBid).toFixed(4);
-    }
+    // Derive YES asks from NO bids (Price_Yes_Ask = 1.0 - Price_No_Bid)
+    const derivedYesAsks = noBids.map(([price, count]: [string, string]) => {
+      const p = parseFloat(price);
+      return [(1.0 - p).toFixed(4), count];
+    }).sort((a: any, b: any) => parseFloat(a[0]) - parseFloat(b[0]));
 
     return res.status(200).json({
       ticker,
+      title: marketData.title || ticker,
+      category: marketData.category || null,
       market: marketData,
-      orderbook: orderbookData,
-      derived_yes_ask: derivedYesAsk,
+      orderbook: {
+        yes_bids: yesBids,
+        no_bids: noBids,
+        yes_asks: derivedYesAsks,
+      },
+      volume_24h: marketData.volume_24h_fp || '0',
+      volume_total: marketData.volume_fp || '0',
+      open_interest: marketData.open_interest_fp || '0',
+      rules_primary: marketData.rules_primary || '',
+      rules_secondary: marketData.rules_secondary || '',
+      close_time: marketData.close_time || null,
+      expiration_time: marketData.expiration_time || null,
+      yes_bid: marketData.yes_bid_dollars || (marketData.yes_bid ? (marketData.yes_bid / 100).toFixed(2) : null),
+      yes_ask: marketData.yes_ask_dollars || (marketData.yes_ask ? (marketData.yes_ask / 100).toFixed(2) : null),
     });
   } catch (e: any) {
     return res.status(500).json({ error: e.message });

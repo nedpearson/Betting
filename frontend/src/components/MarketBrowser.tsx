@@ -366,79 +366,169 @@ export const MarketBrowser: React.FC<MarketBrowserProps> = ({
         </div>
       )}
 
-      {/* Market Order Book Detail Modal */}
+      {/* Full Institutional Market Drill-Down Modal */}
       {selectedMarketForDetail && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in">
-          <div className="bg-[#0c1114] border border-zinc-800 rounded-2xl max-w-xl w-full p-6 shadow-2xl space-y-4 max-h-[85vh] overflow-y-auto">
-            <div className="flex items-start justify-between">
-              <div>
-                <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                  {selectedMarketForDetail.category || 'General'}
-                </span>
-                <h3 className="text-base font-bold text-white mt-1">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-in fade-in">
+          <div className="bg-[#0b1013] border border-zinc-800 rounded-3xl max-w-2xl w-full p-6 sm:p-7 shadow-2xl space-y-5 max-h-[90vh] overflow-y-auto">
+            {/* Modal Header */}
+            <div className="flex items-start justify-between border-b border-zinc-800 pb-4">
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] font-mono px-3 py-1 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 font-bold uppercase">
+                    {selectedMarketForDetail.category || 'General'}
+                  </span>
+                  <span className="text-xs font-mono text-zinc-500">•</span>
+                  <span className="text-xs font-mono text-zinc-400 font-bold">
+                    {selectedMarketForDetail.ticker}
+                  </span>
+                </div>
+                <h3 className="text-lg sm:text-xl font-black text-white leading-snug">
                   {selectedMarketForDetail.title}
                 </h3>
-                <div className="text-xs font-mono text-zinc-400">
-                  {selectedMarketForDetail.ticker}
-                </div>
               </div>
               <button
                 onClick={() => setSelectedMarketForDetail(null)}
-                className="p-1 rounded-lg text-zinc-400 hover:text-white"
+                className="p-2 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-white transition cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            {/* Resting Depth */}
+            {/* Market Statistics Grid */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 font-mono text-xs">
+              <div className="p-3.5 rounded-2xl bg-zinc-950 border border-zinc-800">
+                <span className="text-zinc-500 uppercase block text-[10px]">24h Volume</span>
+                <span className="text-base font-bold text-white mt-0.5 block">
+                  {parseFloat(selectedMarketForDetail.volume_24h || '0').toLocaleString()}
+                </span>
+                <span className="text-[10px] text-zinc-500">Contracts traded</span>
+              </div>
+
+              <div className="p-3.5 rounded-2xl bg-zinc-950 border border-zinc-800">
+                <span className="text-zinc-500 uppercase block text-[10px]">Open Interest</span>
+                <span className="text-base font-bold text-emerald-400 mt-0.5 block">
+                  {parseFloat(selectedMarketForDetail.open_interest || '0').toLocaleString()}
+                </span>
+                <span className="text-[10px] text-zinc-500">Active exposure</span>
+              </div>
+
+              <div className="p-3.5 rounded-2xl bg-zinc-950 border border-zinc-800">
+                <span className="text-zinc-500 uppercase block text-[10px]">Current Spread</span>
+                <span className="text-base font-bold text-sky-400 mt-0.5 block">
+                  {selectedMarketForDetail.yes_bid && selectedMarketForDetail.yes_ask
+                    ? `$${(parseFloat(selectedMarketForDetail.yes_ask) - parseFloat(selectedMarketForDetail.yes_bid)).toFixed(2)}`
+                    : '1.0¢'}
+                </span>
+                <span className="text-[10px] text-zinc-500">Bid / Ask delta</span>
+              </div>
+
+              <div className="p-3.5 rounded-2xl bg-zinc-950 border border-zinc-800">
+                <span className="text-zinc-500 uppercase block text-[10px]">Close / Expiry</span>
+                <span className="text-xs font-bold text-zinc-300 mt-0.5 block truncate">
+                  {selectedMarketForDetail.close_time 
+                    ? new Date(selectedMarketForDetail.close_time).toLocaleDateString()
+                    : 'Active'}
+                </span>
+                <span className="text-[10px] text-zinc-500">Settlement window</span>
+              </div>
+            </div>
+
+            {/* Level-2 Order Book Resting Depth */}
             <div className="space-y-2">
-              <h4 className="text-xs font-mono font-semibold text-zinc-400 uppercase">
-                Resting Order Book Depth
-              </h4>
+              <div className="flex items-center justify-between text-xs font-mono font-semibold text-zinc-400 uppercase">
+                <span>Live Level-2 Order Book Depth</span>
+                <span className="text-[11px] text-emerald-400">Kalshi Order Matching Shard</span>
+              </div>
               <div className="grid grid-cols-2 gap-3 text-xs font-mono">
-                <div className="p-3 rounded-xl bg-zinc-950 border border-zinc-800">
-                  <div className="text-emerald-400 font-bold mb-1">YES BIDS</div>
+                {/* YES BIDS */}
+                <div className="p-4 rounded-2xl bg-zinc-950 border border-zinc-800 space-y-2">
+                  <div className="flex justify-between text-emerald-400 font-bold border-b border-zinc-800/80 pb-1.5">
+                    <span>YES BID PRICE</span>
+                    <span>SIZE</span>
+                  </div>
                   {selectedMarketForDetail.orderbook?.yes_bids?.length > 0 ? (
-                    selectedMarketForDetail.orderbook.yes_bids.slice(0, 5).map(([p, q]: any, idx: number) => (
-                      <div key={idx} className="flex justify-between py-0.5 text-zinc-300">
-                        <span>${p}</span>
-                        <span className="text-zinc-500">{q}x</span>
-                      </div>
-                    ))
+                    selectedMarketForDetail.orderbook.yes_bids.slice(0, 6).map(([p, q]: any, idx: number) => {
+                      const priceVal = parseFloat(p);
+                      const displayPrice = priceVal < 1 ? `$${priceVal.toFixed(2)}` : `$${(priceVal / 100).toFixed(2)}`;
+                      return (
+                        <div key={idx} className="flex justify-between py-1 text-zinc-300 hover:bg-zinc-900/60 px-1 rounded">
+                          <span className="font-bold text-emerald-400">{displayPrice}</span>
+                          <span className="text-zinc-400 font-semibold">{parseFloat(q).toLocaleString()}x</span>
+                        </div>
+                      );
+                    })
                   ) : (
-                    <div className="text-zinc-600">No resting bids</div>
+                    <div className="text-zinc-600 py-3 text-center">No resting bids in book</div>
                   )}
                 </div>
 
-                <div className="p-3 rounded-xl bg-zinc-950 border border-zinc-800">
-                  <div className="text-rose-400 font-bold mb-1">DERIVED YES ASKS</div>
+                {/* YES ASKS */}
+                <div className="p-4 rounded-2xl bg-zinc-950 border border-zinc-800 space-y-2">
+                  <div className="flex justify-between text-rose-400 font-bold border-b border-zinc-800/80 pb-1.5">
+                    <span>YES ASK PRICE</span>
+                    <span>SIZE</span>
+                  </div>
                   {selectedMarketForDetail.orderbook?.yes_asks?.length > 0 ? (
-                    selectedMarketForDetail.orderbook.yes_asks.slice(0, 5).map(([p, q]: any, idx: number) => (
-                      <div key={idx} className="flex justify-between py-0.5 text-zinc-300">
-                        <span>${p}</span>
-                        <span className="text-zinc-500">{q}x</span>
-                      </div>
-                    ))
+                    selectedMarketForDetail.orderbook.yes_asks.slice(0, 6).map(([p, q]: any, idx: number) => {
+                      const priceVal = parseFloat(p);
+                      const displayPrice = priceVal < 1 ? `$${priceVal.toFixed(2)}` : `$${(priceVal / 100).toFixed(2)}`;
+                      return (
+                        <div key={idx} className="flex justify-between py-1 text-zinc-300 hover:bg-zinc-900/60 px-1 rounded">
+                          <span className="font-bold text-rose-400">{displayPrice}</span>
+                          <span className="text-zinc-400 font-semibold">{parseFloat(q).toLocaleString()}x</span>
+                        </div>
+                      );
+                    })
                   ) : (
-                    <div className="text-zinc-600">No resting asks</div>
+                    <div className="text-zinc-600 py-3 text-center">No resting asks in book</div>
                   )}
                 </div>
               </div>
             </div>
 
-            <div className="pt-2 flex justify-end gap-2">
+            {/* Official Settlement Rules & Legal Protocol */}
+            {selectedMarketForDetail.rules_primary && (
+              <div className="p-4 rounded-2xl bg-zinc-950 border border-zinc-800 space-y-1.5 font-sans">
+                <span className="text-xs font-bold text-zinc-400 uppercase tracking-wider block font-mono">
+                  Official Kalshi Settlement Protocol
+                </span>
+                <p className="text-xs text-zinc-300 leading-relaxed">
+                  {selectedMarketForDetail.rules_primary}
+                </p>
+                {selectedMarketForDetail.rules_secondary && (
+                  <p className="text-[11px] text-zinc-500 leading-relaxed pt-1">
+                    {selectedMarketForDetail.rules_secondary}
+                  </p>
+                )}
+              </div>
+            )}
+
+            {/* Embedded Order Placement Controls */}
+            <div className="pt-2 grid grid-cols-2 gap-3">
               <button
                 onClick={() => {
-                  const m = markets.find(x => x.ticker === selectedMarketForDetail.ticker);
-                  if (m) {
-                    const p = m.yes_ask ? parseFloat(m.yes_ask) : 0.50;
-                    onExecuteTrade?.(m.ticker, 'yes', 10, p);
-                  }
+                  const m = markets.find(x => x.ticker === selectedMarketForDetail.ticker) || selectedMarketForDetail;
+                  const p = m.yes_ask ? parseFloat(m.yes_ask) : 0.50;
+                  onExecuteTrade?.(m.ticker, 'yes', 10, p);
                   setSelectedMarketForDetail(null);
                 }}
-                className="w-full py-2.5 px-4 rounded-xl bg-emerald-500 text-zinc-950 font-bold font-mono text-xs hover:bg-emerald-400 transition cursor-pointer"
+                className="py-3.5 px-4 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-black font-mono text-sm transition flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20 active:scale-95 cursor-pointer"
               >
-                Open Order Execution
+                <span>BUY YES @ ${selectedMarketForDetail.yes_ask || '0.50'}</span>
+                <ArrowUpRight className="w-4 h-4" />
+              </button>
+
+              <button
+                onClick={() => {
+                  const m = markets.find(x => x.ticker === selectedMarketForDetail.ticker) || selectedMarketForDetail;
+                  const p = m.yes_bid ? parseFloat((1.0 - parseFloat(m.yes_bid)).toFixed(2)) : 0.50;
+                  onExecuteTrade?.(m.ticker, 'no', 10, p);
+                  setSelectedMarketForDetail(null);
+                }}
+                className="py-3.5 px-4 rounded-2xl bg-rose-500 hover:bg-rose-400 text-white font-black font-mono text-sm transition flex items-center justify-center gap-2 shadow-lg shadow-rose-500/20 active:scale-95 cursor-pointer"
+              >
+                <span>BUY NO @ ${(1.0 - parseFloat(selectedMarketForDetail.yes_bid || '0.50')).toFixed(2)}</span>
+                <ArrowUpRight className="w-4 h-4" />
               </button>
             </div>
           </div>

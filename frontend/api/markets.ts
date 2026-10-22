@@ -52,6 +52,13 @@ function inferCategory(ticker: string, title?: string): string {
   }
 
   if (
+    t.startsWith('KXFED') ||
+    t.startsWith('KXCPI') ||
+    t.startsWith('KXPAYROLLS') ||
+    t.startsWith('KXINX') ||
+    t.startsWith('KXGDP') ||
+    t.startsWith('KX30Y') ||
+    t.startsWith('KX2YR') ||
     t.startsWith('FED') || 
     t.startsWith('CPI') || 
     t.startsWith('INX') || 
@@ -60,7 +67,10 @@ function inferCategory(ticker: string, title?: string): string {
     t.startsWith('RATE') ||
     tit.includes('federal reserve') ||
     tit.includes('interest rate') ||
-    tit.includes('inflation')
+    tit.includes('inflation') ||
+    tit.includes('cpi') ||
+    tit.includes('payroll') ||
+    tit.includes('mortgage')
   ) {
     return 'Economics';
   }
@@ -69,12 +79,15 @@ function inferCategory(ticker: string, title?: string): string {
 }
 
 const TARGET_SERIES = [
-  // Climate and Weather
+  // Climate and Weather (Highs & Lows)
   'KXHIGHDEN', 'KXHIGHMIA', 'KXHIGHCHI', 'KXHIGHNY', 'KXHIGHLAX', 'KXHIGHAUS',
+  'KXLOWDEN', 'KXLOWCHI', 'KXLOWMIA',
   // Digital Assets / Crypto
-  'KXBTC', 'KXETH',
-  // Sports
-  'KXNFLGAME', 'KXNBAGAME'
+  'KXBTC', 'KXETH', 'KXDOGE', 'KXXRP',
+  // Sports (NFL, NBA, NHL, MLB)
+  'KXNFLGAME', 'KXNBAGAME', 'KXNHLGAME', 'KXMLBGAME',
+  // Macroeconomics & Interest Rates
+  'KXFED', 'KXCPI', 'KXPAYROLLS', 'KXINX', 'KXGDP', 'KX30YMORTW', 'KX2YRRATE15M'
 ];
 
 async function fetchLiveKalshiMarkets(): Promise<any[]> {
