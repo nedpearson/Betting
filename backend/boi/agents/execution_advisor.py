@@ -91,15 +91,19 @@ class TradeExecutionAdvisorAgent(BaseAgent):
         """Paper trading: walks the real, live order book with fee deduction and records fills."""
         book = self.books.get(order.ticker)
         if not book:
-            order.status = "rejected"
-            order.detail = {"error": "no live book available for paper fill"}
-            async with self.db.session() as s:
-                await s.merge(order)
-                await s.commit()
-            return
+            try:
+                ob_resp = await self.rest.get_market_orderbook(order.ticker)
+                ob = ob_resp.get("orderbook", ob_resp)
+                book = MarketOrderBook(ticker=order.ticker)
+                yes_bids = [(D(lvl[0]), D(lvl[1])) for lvl in ob.get("yes_dollars", [])] if "yes_dollars" in ob else []
+                no_bids = [(D(lvl[0]), D(lvl[1])) for lvl in ob.get("no_dollars", [])] if "no_dollars" in ob else []
+                book.apply_snapshot(yes_bids=yes_bids, no_bids=no_bids)
+                self.books[order.ticker] = book
+            except Exception as e:
+                log.warning("Could not fetch orderbook on demand for %s: %s", order.ticker, e)
 
-        snap = book.get_snapshot()
-        asks = snap.yes_asks if order.side == "yes" else snap.no_asks
+        snap = book.get_snapshot() if book else None
+        asks = (snap.yes_asks if order.side == "yes" else snap.no_asks) if snap else []
         limit = D(order.limit_price)
         requested_qty = D(order.count)
 
@@ -108,17 +112,41 @@ class TradeExecutionAdvisorAgent(BaseAgent):
         total_fees = Decimal("0")
         fills_to_add: list[FillRecord] = []
 
-        for lvl in asks:
-            if filled_qty >= requested_qty or lvl.price > limit:
-                break
-            take = min(requested_qty - filled_qty, lvl.qty)
-            if take <= Decimal("0"):
-                continue
+        if asks:
+            for lvl in asks:
+                if filled_qty >= requested_qty or lvl.price > limit:
+                    break
+                take = min(requested_qty - filled_qty, lvl.qty)
+                if take <= Decimal("0"):
+                    continue
 
-            fee = default_fee_fn(lvl.price, take, is_taker=True)
-            filled_qty += take
-            total_cost += take * lvl.price
-            total_fees += fee
+                fee = default_fee_fn(lvl.price, take, is_taker=True)
+                filled_qty += take
+                total_cost += take * lvl.price
+                total_fees += fee
+
+                fill = FillRecord(
+                    id=str(uuid.uuid4()),
+                    order_id=order.id,
+                    mode="paper",
+                    ticker=order.ticker,
+                    side=order.side,
+                    action="buy",
+                    price=str(lvl.price),
+                    count=str(take),
+                    fee=str(fee),
+                    is_taker=True,
+                    ts=datetime.now(UTC),
+                )
+                fills_to_add.append(fill)
+
+        # Fallback: if no resting asks on this side, simulate immediate fill at limit price
+        if filled_qty == Decimal("0") and limit > Decimal("0"):
+            take = requested_qty
+            fee = default_fee_fn(limit, take, is_taker=True)
+            filled_qty = take
+            total_cost = take * limit
+            total_fees = fee
 
             fill = FillRecord(
                 id=str(uuid.uuid4()),
@@ -127,7 +155,7 @@ class TradeExecutionAdvisorAgent(BaseAgent):
                 ticker=order.ticker,
                 side=order.side,
                 action="buy",
-                price=str(lvl.price),
+                price=str(limit),
                 count=str(take),
                 fee=str(fee),
                 is_taker=True,

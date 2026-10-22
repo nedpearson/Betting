@@ -7,10 +7,11 @@ import {
   CheckCircle2, 
   ArrowUpRight, 
   Zap, 
-  Info,
-  DollarSign,
-  Minus,
-  Plus
+  Info, 
+  DollarSign, 
+  Minus, 
+  Plus,
+  Lock
 } from 'lucide-react';
 import type { Market } from '../types';
 
@@ -71,203 +72,206 @@ export const TradeDrawer: React.FC<TradeDrawerProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="bg-[#0b1013] border-t sm:border border-zinc-800 rounded-t-3xl sm:rounded-2xl max-w-md w-full overflow-hidden shadow-2xl max-h-[90vh] flex flex-col animate-in slide-in-from-bottom duration-300">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/85 backdrop-blur-md animate-in fade-in duration-200">
+      <div className="bg-[#0b1013] border-t sm:border border-zinc-800 rounded-t-3xl sm:rounded-3xl max-w-lg w-full overflow-hidden shadow-2xl max-h-[95vh] flex flex-col animate-in slide-in-from-bottom duration-300">
+        
         {/* Drawer Drag Bar (Mobile) */}
-        <div className="w-12 h-1.5 bg-zinc-800 rounded-full mx-auto mt-3 sm:hidden shrink-0" />
+        <div className="w-14 h-1.5 bg-zinc-700 rounded-full mx-auto mt-3.5 sm:hidden shrink-0" />
 
-        {/* Drawer Header */}
-        <div className="p-4 sm:p-5 border-b border-zinc-800/80 flex items-start justify-between">
-          <div className="flex-1 pr-3">
-            <div className="flex items-center gap-2 mb-1">
-              <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-zinc-800 text-zinc-300 border border-zinc-700">
+        {/* Drawer Header (Large & Clear) */}
+        <div className="p-5 sm:p-6 border-b border-zinc-800 flex items-start justify-between">
+          <div className="flex-1 pr-4">
+            <div className="flex items-center gap-2.5 mb-2">
+              <span className="text-xs font-bold px-3 py-1 rounded-full bg-zinc-800 text-zinc-300 border border-zinc-700 uppercase">
                 {market.category || 'General'}
               </span>
-              <span className="text-[10px] font-mono text-emerald-400 flex items-center gap-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                Live Book
+              <span className="text-xs font-bold text-emerald-400 flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                Live Orderbook
               </span>
             </div>
-            <h3 className="text-base font-bold text-white leading-snug line-clamp-2">
+            <h3 className="text-lg sm:text-xl font-black text-white leading-snug">
               {market.title}
             </h3>
-            <div className="text-xs font-mono text-zinc-400 mt-0.5">
+            <div className="text-xs font-mono text-zinc-400 mt-1 font-semibold">
               {market.ticker}
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-xl text-zinc-400 hover:text-white hover:bg-zinc-800 transition shrink-0"
+            className="p-2.5 rounded-2xl text-zinc-400 hover:text-white hover:bg-zinc-800 transition shrink-0 border border-zinc-800"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Drawer Body / Form */}
-        <form onSubmit={handleSubmit} className="p-4 sm:p-5 overflow-y-auto space-y-4 flex-1">
-          {/* Side Selector (YES / NO Tabs) */}
-          <div className="grid grid-cols-2 gap-2 p-1 bg-zinc-950/80 rounded-xl border border-zinc-800/80">
+        <form onSubmit={handleSubmit} className="p-5 sm:p-6 overflow-y-auto space-y-6 flex-1">
+          
+          {/* Side Selector (BUY YES vs BUY NO - Huge Buttons) */}
+          <div className="grid grid-cols-2 gap-3 p-1.5 bg-zinc-950 rounded-2xl border border-zinc-800">
             <button
               type="button"
               onClick={() => setSide('yes')}
-              className={`py-2.5 rounded-lg text-xs font-mono font-bold transition flex items-center justify-center gap-1.5 ${
+              className={`py-4 rounded-xl text-sm sm:text-base font-black transition flex flex-col items-center justify-center gap-1 ${
                 side === 'yes'
-                  ? 'bg-emerald-500 text-zinc-950 shadow-md shadow-emerald-500/20'
+                  ? 'bg-emerald-500 text-zinc-950 shadow-lg shadow-emerald-500/30'
                   : 'text-zinc-400 hover:text-white'
               }`}
             >
               <span>BUY YES</span>
-              <span className="text-[11px] font-normal opacity-90">
-                {market.yes_ask ? `@ $${market.yes_ask}` : ''}
+              <span className="text-xs font-semibold opacity-90 font-mono">
+                {market.yes_ask ? `@ $${market.yes_ask}` : 'Market Ask'}
               </span>
             </button>
             <button
               type="button"
               onClick={() => setSide('no')}
-              className={`py-2.5 rounded-lg text-xs font-mono font-bold transition flex items-center justify-center gap-1.5 ${
+              className={`py-4 rounded-xl text-sm sm:text-base font-black transition flex flex-col items-center justify-center gap-1 ${
                 side === 'no'
-                  ? 'bg-rose-500 text-white shadow-md shadow-rose-500/20'
+                  ? 'bg-rose-500 text-white shadow-lg shadow-rose-500/30'
                   : 'text-zinc-400 hover:text-white'
               }`}
             >
               <span>BUY NO</span>
-              <span className="text-[11px] font-normal opacity-90">
-                {market.yes_bid ? `@ $${(1.0 - parseFloat(market.yes_bid)).toFixed(2)}` : ''}
+              <span className="text-xs font-semibold opacity-90 font-mono">
+                {market.yes_bid ? `@ $${(1.0 - parseFloat(market.yes_bid)).toFixed(2)}` : 'Market Bid'}
               </span>
             </button>
           </div>
 
-          {/* Price & Contracts Steppers */}
-          <div className="grid grid-cols-2 gap-3">
-            {/* Price Input */}
-            <div className="p-3 rounded-xl bg-zinc-950/60 border border-zinc-800/80 space-y-1">
-              <label className="text-[10px] font-mono text-zinc-400 uppercase block">Limit Price</label>
+          {/* Price & Contracts Steppers (Large Controls) */}
+          <div className="grid grid-cols-2 gap-4">
+            
+            {/* Limit Price */}
+            <div className="p-4 rounded-2xl bg-zinc-950 border border-zinc-800 space-y-2">
+              <label className="text-xs font-bold text-zinc-400 uppercase tracking-wider block">Limit Price</label>
               <div className="flex items-center justify-between">
                 <button
                   type="button"
                   onClick={() => setPrice(p => Math.max(0.01, parseFloat((p - 0.01).toFixed(2))))}
-                  className="p-1 rounded bg-zinc-900 text-zinc-300 hover:text-white"
+                  className="p-2 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-white border border-zinc-800 active:scale-95 transition"
                 >
-                  <Minus className="w-3.5 h-3.5" />
+                  <Minus className="w-4 h-4" />
                 </button>
-                <div className="text-base font-bold font-mono text-white">
+                <div className="text-xl sm:text-2xl font-black font-mono text-white">
                   ${price.toFixed(2)}
                 </div>
                 <button
                   type="button"
                   onClick={() => setPrice(p => Math.min(0.99, parseFloat((p + 0.01).toFixed(2))))}
-                  className="p-1 rounded bg-zinc-900 text-zinc-300 hover:text-white"
+                  className="p-2 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-white border border-zinc-800 active:scale-95 transition"
                 >
-                  <Plus className="w-3.5 h-3.5" />
+                  <Plus className="w-4 h-4" />
                 </button>
               </div>
             </div>
 
-            {/* Contracts Input */}
-            <div className="p-3 rounded-xl bg-zinc-950/60 border border-zinc-800/80 space-y-1">
-              <label className="text-[10px] font-mono text-zinc-400 uppercase block">Quantity</label>
+            {/* Contracts Quantity */}
+            <div className="p-4 rounded-2xl bg-zinc-950 border border-zinc-800 space-y-2">
+              <label className="text-xs font-bold text-zinc-400 uppercase tracking-wider block">Contracts</label>
               <div className="flex items-center justify-between">
                 <button
                   type="button"
                   onClick={() => handleQuickAdd(-5)}
-                  className="p-1 rounded bg-zinc-900 text-zinc-300 hover:text-white"
+                  className="p-2 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-white border border-zinc-800 active:scale-95 transition"
                 >
-                  <Minus className="w-3.5 h-3.5" />
+                  <Minus className="w-4 h-4" />
                 </button>
-                <div className="text-base font-bold font-mono text-white">
+                <div className="text-xl sm:text-2xl font-black font-mono text-emerald-400">
                   {contracts}x
                 </div>
                 <button
                   type="button"
                   onClick={() => handleQuickAdd(5)}
-                  className="p-1 rounded bg-zinc-900 text-zinc-300 hover:text-white"
+                  className="p-2 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-white border border-zinc-800 active:scale-95 transition"
                 >
-                  <Plus className="w-3.5 h-3.5" />
+                  <Plus className="w-4 h-4" />
                 </button>
               </div>
             </div>
           </div>
 
           {/* Quick Quantity Chips */}
-          <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
+          <div className="flex items-center gap-2 overflow-x-auto pb-1">
             {[5, 10, 25, 50, 100].map(qty => (
               <button
                 key={qty}
                 type="button"
                 onClick={() => handleSetContracts(qty)}
-                className={`px-3 py-1.5 rounded-lg border text-xs font-mono font-semibold transition shrink-0 ${
+                className={`flex-1 py-2 px-3 rounded-xl border text-xs sm:text-sm font-bold font-mono transition ${
                   contracts === qty
-                    ? 'bg-zinc-800 border-zinc-600 text-white'
-                    : 'bg-zinc-950/60 border-zinc-800/80 text-zinc-400 hover:text-zinc-200'
+                    ? 'bg-emerald-500 text-zinc-950 border-emerald-400 shadow-md'
+                    : 'bg-zinc-950 border-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-900'
                 }`}
               >
-                {qty}
+                +{qty}
               </button>
             ))}
           </div>
 
-          {/* Quantitative Mathematics Breakdown */}
-          <div className="p-3.5 rounded-xl bg-zinc-950/90 border border-zinc-800/80 space-y-2 text-xs font-mono">
-            <div className="text-[10px] text-zinc-500 uppercase tracking-wider font-semibold border-b border-zinc-800/60 pb-1 flex items-center justify-between">
+          {/* Quantitative Mathematics & Quadratic Fee Breakdown */}
+          <div className="p-5 rounded-2xl bg-zinc-950 border border-zinc-800 space-y-3 text-sm">
+            <div className="text-xs text-zinc-400 uppercase tracking-wider font-bold border-b border-zinc-800/80 pb-2 flex items-center justify-between">
               <span>Financial Economics</span>
-              <span>Kalshi Quadratic Fee</span>
+              <span className="text-emerald-400">Kalshi Fee Formula Active</span>
             </div>
 
-            <div className="flex justify-between text-zinc-400">
-              <span>Gross Outlay ({contracts} contracts)</span>
-              <span className="text-white">${grossCost.toFixed(2)}</span>
+            <div className="flex justify-between text-zinc-300">
+              <span>Gross Contracts Cost ({contracts}x @ ${price.toFixed(2)})</span>
+              <span className="text-white font-mono font-bold">${grossCost.toFixed(2)}</span>
             </div>
 
-            <div className="flex justify-between text-zinc-400">
-              <span className="flex items-center gap-1">
-                <span>Taker Fee (Exact Quadratic)</span>
-                <Info className="w-3 h-3 text-zinc-500" />
+            <div className="flex justify-between text-zinc-300">
+              <span className="flex items-center gap-1.5">
+                <span>Exchange Taker Fee</span>
+                <span className="text-xs text-zinc-500">(0.07 × C × P × [1-P])</span>
               </span>
-              <span className="text-amber-400 font-semibold">+${takerFee.toFixed(2)}</span>
+              <span className="text-amber-400 font-mono font-bold">+${takerFee.toFixed(2)}</span>
             </div>
 
-            <div className="flex justify-between text-zinc-200 font-bold pt-1 border-t border-zinc-800/60">
-              <span>Total Capital Required</span>
-              <span className="text-emerald-400">${totalCost.toFixed(2)}</span>
+            <div className="flex justify-between text-white font-black text-base pt-2 border-t border-zinc-800">
+              <span>Total Capital Committed</span>
+              <span className="text-emerald-400 font-mono">${totalCost.toFixed(2)}</span>
             </div>
 
-            <div className="grid grid-cols-2 gap-2 pt-2 text-[11px]">
-              <div className="p-2 rounded bg-zinc-900/60 border border-zinc-800">
-                <span className="text-zinc-500 block">Max Profit</span>
-                <span className="text-emerald-400 font-bold mt-0.5 block">+${netProfit.toFixed(2)}</span>
+            <div className="grid grid-cols-2 gap-3 pt-2 text-xs">
+              <div className="p-3 rounded-xl bg-zinc-900 border border-zinc-800">
+                <span className="text-zinc-400 block font-medium">Max Net Payout</span>
+                <span className="text-emerald-400 font-black font-mono text-base mt-0.5 block">+${netProfit.toFixed(2)}</span>
               </div>
-              <div className="p-2 rounded bg-zinc-900/60 border border-zinc-800">
-                <span className="text-zinc-500 block">Net ROI</span>
-                <span className="text-sky-400 font-bold mt-0.5 block">+{netRoiPct.toFixed(1)}%</span>
+              <div className="p-3 rounded-xl bg-zinc-900 border border-zinc-800">
+                <span className="text-zinc-400 block font-medium">Expected Net Yield</span>
+                <span className="text-sky-400 font-black font-mono text-base mt-0.5 block">+{netRoiPct.toFixed(1)}% ROI</span>
               </div>
             </div>
           </div>
 
-          {/* Submit Action Button */}
+          {/* Big Action Submit Button */}
           <div className="pt-2">
             <button
               type="submit"
               disabled={isExecuting}
-              className={`w-full py-3.5 px-4 rounded-xl font-bold font-mono text-xs shadow-lg transition flex items-center justify-center gap-2 ${
+              className={`w-full h-16 px-6 rounded-2xl font-black text-base sm:text-lg shadow-xl transition flex items-center justify-center gap-3 active:scale-95 ${
                 side === 'yes'
-                  ? 'bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-zinc-950 shadow-emerald-500/20'
-                  : 'bg-gradient-to-r from-rose-500 to-pink-600 hover:from-rose-400 hover:to-pink-500 text-white shadow-rose-500/20'
+                  ? 'bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-zinc-950 shadow-emerald-500/25'
+                  : 'bg-gradient-to-r from-rose-500 to-pink-600 hover:from-rose-400 hover:to-pink-500 text-white shadow-rose-500/25'
               } disabled:opacity-50`}
             >
               {isExecuting ? (
                 <>
-                  <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                  <span>Submitting Order...</span>
+                  <div className="w-5 h-5 border-3 border-current border-t-transparent rounded-full animate-spin" />
+                  <span>Submitting Order to Engine...</span>
                 </>
               ) : (
                 <>
-                  <TrendingUp className="w-4 h-4" />
-                  <span>Submit {side.toUpperCase()} Order (${totalCost.toFixed(2)})</span>
+                  <TrendingUp className="w-5 h-5" />
+                  <span>Submit {side.toUpperCase()} Bet (${totalCost.toFixed(2)})</span>
                 </>
               )}
             </button>
-            <p className="text-[10px] text-zinc-500 text-center font-mono mt-2">
-              Protected by fractional Kelly limits and independent risk governor
+            <p className="text-xs text-zinc-400 text-center font-medium mt-2.5">
+              Gated by independent risk governor, maximum drawdown guards, and fractional Kelly limits
             </p>
           </div>
         </form>

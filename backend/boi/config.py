@@ -63,9 +63,18 @@ class Settings(BaseSettings):
     kalshi_rest_write_per_sec: float = 4.0
 
     # --- Execution gating ---
-    execution_mode: ExecutionMode = ExecutionMode.INTELLIGENCE
-    live_trading_armed: bool = False
-    live_trading_confirm: str = ""
+    execution_mode: ExecutionMode = Field(
+        default=ExecutionMode.PAPER,
+        validation_alias=AliasChoices("execution_mode", "boi_mode"),
+    )
+    live_trading_armed: bool = Field(
+        default=False,
+        validation_alias=AliasChoices("live_trading_armed", "boi_live_trading_armed"),
+    )
+    live_trading_confirm: str = Field(
+        default="",
+        validation_alias=AliasChoices("live_trading_confirm", "boi_live_execution_confirmed"),
+    )
 
     # --- Bankroll & risk policy (BALANCED / CAPITAL PRESERVATION defaults) ---
     bankroll: Decimal = Decimal("500")
