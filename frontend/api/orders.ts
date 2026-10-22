@@ -54,7 +54,37 @@ export default async function handler(req: any, res: any) {
     post_only: false,
   };
 
-  const result = await kalshiRequest('POST', '/portfolio/events/orders', payload, creds);
+  let result = await kalshiRequest('POST', '/portfolio/events/orders', payload, creds);
+
+  // Auto-Recovery: If Kalshi rejects with insufficient balance, check if funds reside on another exchange shard (e.g. shard 2 vs 0)
+  if (!result.ok) {
+    const errMsg = (result.error || '').toLowerCase();
+    const rawMsg = JSON.stringify(result.data || '').toLowerCase();
+    if (errMsg.includes('insufficient balance') || rawMsg.includes('insufficient balance')) {
+      try {
+        const balRes = await kalshiRequest('GET', '/portfolio/balance', undefined, creds);
+        const breakdowns = balRes.data?.balance_breakdown || [];
+        const donorShard = breakdowns.find((b: any) => b.exchange_index !== 0 && parseFloat(b.balance) > 0);
+        if (donorShard) {
+          const availAmt = parseFloat(donorShard.balance);
+          const transferUnits = Math.round(availAmt * 10000);
+          if (transferUnits > 0) {
+            await kalshiRequest('POST', '/portfolio/intra_exchange_instance_transfer', {
+              source: 'event_contract',
+              source_exchange_shard: donorShard.exchange_index,
+              destination: 'event_contract',
+              destination_exchange_shard: 0,
+              amount: transferUnits,
+            }, creds);
+            // Retry the order on exchange shard 0
+            result = await kalshiRequest('POST', '/portfolio/events/orders', payload, creds);
+          }
+        }
+      } catch (sweepErr) {
+        console.error('Auto-sweep exchange transfer failed:', sweepErr);
+      }
+    }
+  }
 
   if (!result.ok) {
     return res.status(result.status || 400).json({

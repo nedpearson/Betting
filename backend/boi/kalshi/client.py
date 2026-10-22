@@ -192,8 +192,45 @@ class KalshiRestClient:
     async def get_orders(self, status: str = "resting") -> dict:
         return await self._request("GET", "/portfolio/orders", params={"status": status}, auth_required=True)
 
+    async def transfer_exchange_shard(
+        self,
+        source_shard: int,
+        destination_shard: int,
+        amount_units: int,
+        source_instance: str = "event_contract",
+        destination_instance: str = "event_contract",
+    ) -> dict:
+        """Transfer capital between Kalshi exchange shards (10000 units = $1.00)."""
+        payload = {
+            "source": source_instance,
+            "source_exchange_shard": source_shard,
+            "destination": destination_instance,
+            "destination_exchange_shard": destination_shard,
+            "amount": amount_units,
+        }
+        return await self._request("POST", "/portfolio/intra_exchange_instance_transfer", json_body=payload, auth_required=True)
+
     async def create_order_v2(self, payload: dict) -> dict:
-        return await self._request("POST", "/portfolio/events/orders", json_body=payload, auth_required=True)
+        try:
+            return await self._request("POST", "/portfolio/events/orders", json_body=payload, auth_required=True)
+        except Exception as e:
+            err_str = str(e).lower()
+            if "insufficient balance" in err_str:
+                logger.warning("Order rejected with insufficient balance, attempting auto-sweep from alternate exchange shards...")
+                try:
+                    bal = await self.get_balance()
+                    for item in bal.get("balance_breakdown", []):
+                        shard = item.get("exchange_index")
+                        s_bal = float(item.get("balance", "0") or 0)
+                        if shard != 0 and s_bal > 0:
+                            units = int(round(s_bal * 10000))
+                            if units > 0:
+                                await self.transfer_exchange_shard(shard, 0, units)
+                                logger.info(f"Auto-swept ${s_bal:.2f} from exchange shard {shard} to shard 0")
+                                return await self._request("POST", "/portfolio/events/orders", json_body=payload, auth_required=True)
+                except Exception as sweep_err:
+                    logger.error(f"Auto-sweep failed: {sweep_err}")
+            raise
 
     async def cancel_order_v2(self, order_id: str, market_ticker: str) -> dict:
         return await self._request(

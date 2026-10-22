@@ -77,6 +77,9 @@ export const TradeDrawer: React.FC<TradeDrawerProps> = ({
   const netProfit = Math.max(0, maxPayout - totalCost);
   const netRoiPct = totalCost > 0 ? (netProfit / totalCost) * 100 : 0;
 
+  const availableCashNum = parseFloat(String(availableCash || '0')) || 0;
+  const isInsufficient = availableCashNum > 0 && totalCost > availableCashNum;
+
   const handleContractsChange = (num: number) => {
     const valid = Math.max(1, num);
     setContracts(valid);
@@ -377,11 +380,25 @@ export const TradeDrawer: React.FC<TradeDrawerProps> = ({
 
           {/* Sticky Action Footer - Always visible regardless of screen height */}
           <div className="p-4 sm:p-5 bg-[#0b1013] border-t border-zinc-800 shrink-0 shadow-2xl space-y-2">
+            {isInsufficient && (
+              <div className="flex items-center justify-between p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs font-mono">
+                <span>Exceeds cash balance (${availableCashNum.toFixed(2)} avail)</span>
+                <button
+                  type="button"
+                  onClick={() => handleDollarChange(availableCashNum.toFixed(2))}
+                  className="px-2 py-1 rounded bg-amber-500/20 hover:bg-amber-500/30 text-amber-200 font-bold underline cursor-pointer"
+                >
+                  Cap to Max Cash
+                </button>
+              </div>
+            )}
             <button
               type="submit"
-              disabled={isExecuting}
+              disabled={isExecuting || isInsufficient}
               className={`w-full h-14 sm:h-16 px-6 rounded-2xl font-black text-base sm:text-lg shadow-xl transition flex items-center justify-center gap-3 active:scale-95 cursor-pointer ${
-                side === 'yes'
+                isInsufficient
+                  ? 'bg-zinc-800 text-zinc-500 cursor-not-allowed border border-zinc-700'
+                  : side === 'yes'
                   ? 'bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-zinc-950 shadow-emerald-500/30'
                   : 'bg-gradient-to-r from-rose-500 to-pink-600 hover:from-rose-400 hover:to-pink-500 text-white shadow-rose-500/30'
               } disabled:opacity-50`}
@@ -391,6 +408,8 @@ export const TradeDrawer: React.FC<TradeDrawerProps> = ({
                   <div className="w-5 h-5 border-2 border-current border-t-transparent rounded-full animate-spin" />
                   <span>Submitting Order to Kalshi...</span>
                 </>
+              ) : isInsufficient ? (
+                <span>INSUFFICIENT BALANCE (${availableCashNum.toFixed(2)} AVAIL)</span>
               ) : (
                 <>
                   <TrendingUp className="w-5 h-5" />
