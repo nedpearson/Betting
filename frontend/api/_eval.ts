@@ -142,6 +142,8 @@ export async function evaluateLiveMarkets(): Promise<{
   try {
     const candidates: EvaluatedOpportunity[] = [];
 
+    const diagnostics: string[] = [];
+
     // 1. Evaluate Weather Markets
     const cityEntries = Object.entries(CITIES);
     const weatherResults = await Promise.allSettled(
@@ -151,9 +153,17 @@ export async function evaluateLiveMarkets(): Promise<{
           getWeatherDistribution(code, info),
         ]);
 
-        if (!kRes.ok || !dist) return [];
+        if (!kRes.ok) {
+          diagnostics.push(`${code}: Kalshi HTTP ${kRes.status}`);
+          return [];
+        }
+        if (!dist) {
+          diagnostics.push(`${code}: Weather dist null`);
+          return [];
+        }
         const kData = await kRes.json();
         const cityCandidates: EvaluatedOpportunity[] = [];
+        diagnostics.push(`${code}: kMarkets=${(kData.markets || []).length}, mean=${dist.mean.toFixed(1)}`);
 
         for (const m of (kData.markets || [])) {
           const yesAsk = parseFloat(m.yes_ask_dollars || '0');
@@ -328,7 +338,7 @@ export async function evaluateLiveMarkets(): Promise<{
       return {
         bestTrade: null,
         opportunities: [],
-        reason: 'Our multi-model ensemble evaluated all open contracts. No market currently clears conservative edge thresholds (+3.0¢ / contract, +5.0% net ROI) after quadratic taker fees and slippage. Capital preservation mode active.',
+        reason: `Our multi-model ensemble evaluated open contracts. No market currently clears conservative edge thresholds (+3.0¢ / contract, +5.0% net ROI) after quadratic taker fees and slippage. [${diagnostics.join('; ')}]`,
       };
     }
 
