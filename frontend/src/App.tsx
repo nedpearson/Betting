@@ -108,6 +108,7 @@ export const App: React.FC = () => {
   });
 
   const [selectedOppIndex, setSelectedOppIndex] = useState<number>(0);
+  const [selectedMarketCategory, setSelectedMarketCategory] = useState<string>('ALL');
   const [toastMessage, setToastMessage] = useState<{ text: string; type: 'success' | 'warn' | 'info' } | null>(null);
 
   const showToast = (text: string, type: 'success' | 'warn' | 'info' = 'info') => {
@@ -515,13 +516,19 @@ export const App: React.FC = () => {
         {activeTab === 'markets' && (
           <MarketBrowser 
             markets={markets} 
+            initialCategory={selectedMarketCategory}
             onExecuteTrade={handleOpenTradeDrawer}
             availableCash={portfolio?.available_cash}
           />
         )}
 
         {activeTab === 'domains' && (
-          <DomainViews />
+          <DomainViews 
+            onNavigateToCategory={(cat) => {
+              setSelectedMarketCategory(cat);
+              setActiveTab('markets');
+            }}
+          />
         )}
 
         {activeTab === 'agents' && (
@@ -530,7 +537,11 @@ export const App: React.FC = () => {
 
         {activeTab === 'portfolio' && (
           <div className="space-y-8">
-            <PortfolioView portfolio={portfolio} />
+            <PortfolioView 
+              portfolio={portfolio} 
+              onRefresh={refreshAll}
+              onOpenSettings={() => setIsAccountModalOpen(true)}
+            />
             <RiskControls 
               onTriggerKillSwitch={handleTriggerKillSwitch} 
               isHalted={isHalted}

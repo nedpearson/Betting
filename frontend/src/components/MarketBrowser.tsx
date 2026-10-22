@@ -18,30 +18,99 @@ import { fetchMarketDetail } from '../api';
 
 interface MarketBrowserProps {
   markets: Market[];
+  initialCategory?: string;
   onExecuteTrade?: (ticker: string, side: 'yes' | 'no', contracts: number, price: number) => void;
   availableCash?: string | number;
 }
 
 export const MarketBrowser: React.FC<MarketBrowserProps> = ({ 
   markets,
+  initialCategory = 'ALL',
   onExecuteTrade,
   availableCash,
 }) => {
   const [search, setSearch] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
+  const [selectedCategory, setSelectedCategory] = useState<string>(initialCategory);
   const [viewMode, setViewMode] = useState<'cards' | 'table'>('cards');
   const [selectedMarketForDetail, setSelectedMarketForDetail] = useState<any | null>(null);
   const [isLoadingDetail, setIsLoadingDetail] = useState(false);
 
+  React.useEffect(() => {
+    if (initialCategory) setSelectedCategory(initialCategory);
+  }, [initialCategory]);
+
   const categories = ['ALL', 'Climate and Weather', 'Crypto', 'Sports', 'Economics'];
+
+  const matchCategory = (m: Market, cat: string) => {
+    if (cat === 'ALL') return true;
+    const lowerCat = cat.toLowerCase();
+    const mCat = (m.category || '').toLowerCase();
+    const mTicker = (m.ticker || '').toUpperCase();
+    const mTitle = (m.title || '').toLowerCase();
+
+    if (cat === 'Climate and Weather') {
+      return (
+        mCat.includes('weather') || 
+        mCat.includes('climate') || 
+        mTicker.startsWith('KXHIGH') || 
+        mTicker.startsWith('KXLOW') || 
+        mTicker.startsWith('KXRAIN') || 
+        mTicker.startsWith('KXSNOW') || 
+        mTitle.includes('temperature') || 
+        mTitle.includes('weather')
+      );
+    }
+    if (cat === 'Crypto') {
+      return (
+        mCat.includes('crypto') || 
+        mTicker.startsWith('KXBTC') || 
+        mTicker.startsWith('KXETH') || 
+        mTicker.startsWith('KXSOL') || 
+        mTicker.startsWith('KXXRP') || 
+        mTicker.startsWith('KXDOGE') || 
+        mTitle.includes('bitcoin') || 
+        mTitle.includes('ethereum')
+      );
+    }
+    if (cat === 'Sports') {
+      return (
+        mCat.includes('sports') || 
+        mTicker.startsWith('KXNFL') || 
+        mTicker.startsWith('KXNBA') || 
+        mTicker.startsWith('KXMLB') || 
+        mTicker.startsWith('KXNHL') || 
+        mTicker.startsWith('KXNCAAF') || 
+        mTicker.startsWith('KXWNBA') || 
+        mTicker.startsWith('KXLIGA') ||
+        mTitle.includes('nfl') || 
+        mTitle.includes('nba')
+      );
+    }
+    if (cat === 'Economics') {
+      return (
+        mCat.includes('econ') || 
+        mTicker.startsWith('FED') || 
+        mTicker.startsWith('CPI') || 
+        mTicker.startsWith('INX') || 
+        mTicker.startsWith('JOB') || 
+        mTicker.startsWith('GDP') || 
+        mTitle.includes('federal reserve') || 
+        mTitle.includes('inflation')
+      );
+    }
+
+    return mCat.includes(lowerCat);
+  };
+
+  const getCategoryCount = (cat: string) => {
+    return markets.filter((m) => matchCategory(m, cat)).length;
+  };
 
   const filtered = markets.filter((m) => {
     const matchesSearch =
       m.ticker.toLowerCase().includes(search.toLowerCase()) ||
       m.title.toLowerCase().includes(search.toLowerCase());
-    const matchesCat =
-      selectedCategory === 'ALL' ||
-      (m.category && m.category.toLowerCase().includes(selectedCategory.toLowerCase()));
+    const matchesCat = matchCategory(m, selectedCategory);
     return matchesSearch && matchesCat;
   });
 
@@ -124,19 +193,28 @@ export const MarketBrowser: React.FC<MarketBrowserProps> = ({
 
         {/* Category Filter Pills */}
         <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar">
-          {categories.map((cat) => (
-            <button
-              key={cat}
-              onClick={() => setSelectedCategory(cat)}
-              className={`px-4 py-2 rounded-2xl text-xs sm:text-sm whitespace-nowrap transition font-bold ${
-                selectedCategory === cat
-                  ? 'bg-emerald-500 text-zinc-950 font-black shadow-md'
-                  : 'bg-zinc-900 border border-zinc-800 text-zinc-300 hover:text-white hover:bg-zinc-800'
-              }`}
-            >
-              {cat}
-            </button>
-          ))}
+          {categories.map((cat) => {
+            const count = getCategoryCount(cat);
+            const isSelected = selectedCategory === cat;
+            return (
+              <button
+                key={cat}
+                onClick={() => setSelectedCategory(cat)}
+                className={`px-4 py-2 rounded-2xl text-xs sm:text-sm whitespace-nowrap transition font-bold flex items-center gap-2 cursor-pointer ${
+                  isSelected
+                    ? 'bg-emerald-500 text-zinc-950 font-black shadow-md'
+                    : 'bg-zinc-900 border border-zinc-800 text-zinc-300 hover:text-white hover:bg-zinc-800'
+                }`}
+              >
+                <span>{cat}</span>
+                <span className={`text-[11px] px-1.5 py-0.5 rounded-full ${
+                  isSelected ? 'bg-zinc-950/20 text-zinc-950 font-black' : 'bg-zinc-800 text-zinc-400'
+                }`}>
+                  {count}
+                </span>
+              </button>
+            );
+          })}
         </div>
       </div>
 
