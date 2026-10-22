@@ -87,11 +87,12 @@ export async function kalshiRequest(
 
     const data = await resp.json().catch(() => ({}));
     if (!resp.ok) {
+      const errMsg = typeof data.error === 'object' ? (data.error?.message || JSON.stringify(data.error)) : (data.error || data.message);
       return {
         ok: false,
         status: resp.status,
         data,
-        error: data.message || data.error || `Kalshi HTTP ${resp.status}`,
+        error: errMsg || `Kalshi HTTP ${resp.status}`,
       };
     }
 
