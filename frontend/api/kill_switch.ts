@@ -20,6 +20,23 @@ export default async function handler(req: any, res: any) {
     });
   }
 
+  const isResume = req.method === 'DELETE' || req.query?.action === 'resume' || req.body?.action === 'resume';
+
+  if (isResume) {
+    const proxied = await tryProxyToBackend('/api/resume', { method: 'POST' });
+    isHaltedMemory = false;
+    haltReasonMemory = null;
+    if (proxied.proxied && proxied.data) {
+      return res.status(200).json(proxied.data);
+    }
+    return res.status(200).json({
+      status: 'ACTIVE',
+      is_halted: false,
+      time: new Date().toISOString(),
+      reason: 'Trading resumed by operator; safety halt cleared',
+    });
+  }
+
   if (req.method === 'POST') {
     const proxied = await tryProxyToBackend('/api/kill_switch', { method: 'POST' });
     isHaltedMemory = true;
@@ -32,21 +49,6 @@ export default async function handler(req: any, res: any) {
       is_halted: true,
       time: new Date().toISOString(),
       reason: haltReasonMemory,
-    });
-  }
-
-  if (req.method === 'DELETE') {
-    const proxied = await tryProxyToBackend('/api/resume', { method: 'POST' });
-    isHaltedMemory = false;
-    haltReasonMemory = null;
-    if (proxied.proxied && proxied.data) {
-      return res.status(200).json(proxied.data);
-    }
-    return res.status(200).json({
-      status: 'ACTIVE',
-      is_halted: false,
-      time: new Date().toISOString(),
-      reason: 'Trading resumed by operator; safety halt cleared',
     });
   }
 

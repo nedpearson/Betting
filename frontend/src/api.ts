@@ -79,7 +79,11 @@ export async function triggerKillSwitch(): Promise<any> {
 }
 
 export async function resumeTrading(): Promise<any> {
-  const res = await fetchNoCache(`${BASE}/api/resume`, { method: 'POST' });
+  const res = await fetchNoCache(`${BASE}/api/kill_switch?action=resume`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action: 'resume' }),
+  });
   return res.json();
 }
 
