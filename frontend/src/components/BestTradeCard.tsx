@@ -129,15 +129,24 @@ export const BestTradeCard: React.FC<BestTradeCardProps> = ({
         </div>
 
         <div className="flex items-center gap-4">
-          <div
-            className={`px-5 py-3 rounded-2xl font-black text-lg sm:text-xl tracking-wider shadow-md ${
+          <button
+            onClick={() =>
+              onExecute(
+                opp.ticker,
+                isYes ? 'yes' : 'no',
+                contracts,
+                parseFloat(opp.max_entry_price || opp.entry_price || '0.50')
+              )
+            }
+            className={`px-5 py-3 rounded-2xl font-black text-lg sm:text-xl tracking-wider shadow-md transition active:scale-95 cursor-pointer ${
               isYes
-                ? 'bg-emerald-500 text-zinc-950'
-                : 'bg-rose-500 text-white'
+                ? 'bg-emerald-500 hover:bg-emerald-400 text-zinc-950'
+                : 'bg-rose-500 hover:bg-rose-400 text-white'
             }`}
+            title="Click to place bet"
           >
             {opp.action}
-          </div>
+          </button>
 
           <button
             onClick={() =>

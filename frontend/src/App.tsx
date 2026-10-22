@@ -35,6 +35,9 @@ import {
 import { 
   MobileNav 
 } from './components/MobileNav';
+import { 
+  TradeDrawer 
+} from './components/TradeDrawer';
 
 import type {
   BestTradeResponse,
@@ -90,6 +93,17 @@ export const App: React.FC = () => {
 
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isExecuting, setIsExecuting] = useState(false);
+  const [activeTradeMarket, setActiveTradeMarket] = useState<Market | null>(null);
+  const [tradeDefaults, setTradeDefaults] = useState<{
+    side: 'yes' | 'no';
+    contracts: number;
+    price: number;
+  }>({
+    side: 'yes',
+    contracts: 12,
+    price: 0.39,
+  });
+
   const [toastMessage, setToastMessage] = useState<{ text: string; type: 'success' | 'warn' | 'info' } | null>(null);
 
   const showToast = (text: string, type: 'success' | 'warn' | 'info' = 'info') => {
@@ -161,7 +175,28 @@ export const App: React.FC = () => {
     };
   }, [refreshAll]);
 
-  const handleExecute = async (
+  const handleOpenTradeDrawer = (
+    ticker: string,
+    side: 'yes' | 'no',
+    contracts: number,
+    price: number
+  ) => {
+    const found = markets.find((m) => m.ticker === ticker);
+    const m: Market = found || {
+      ticker,
+      title: ticker,
+      category: 'Sports',
+      status: 'active',
+      yes_bid: price.toFixed(4),
+      yes_ask: price.toFixed(4),
+      spread: '0.01',
+      is_stale: false,
+    };
+    setTradeDefaults({ side, contracts, price });
+    setActiveTradeMarket(m);
+  };
+
+  const handleConfirmOrder = async (
     ticker: string,
     side: 'yes' | 'no',
     contracts: number,
@@ -183,6 +218,7 @@ export const App: React.FC = () => {
       showToast('Error sending order to engine API', 'warn');
     } finally {
       setIsExecuting(false);
+      setActiveTradeMarket(null);
     }
   };
 
@@ -218,6 +254,18 @@ export const App: React.FC = () => {
         isOpen={isAccountModalOpen}
         onClose={() => setIsAccountModalOpen(false)}
         onAccountUpdated={refreshAll}
+      />
+
+      {/* Global Interactive Trade Execution Drawer */}
+      <TradeDrawer
+        market={activeTradeMarket}
+        isOpen={Boolean(activeTradeMarket)}
+        onClose={() => setActiveTradeMarket(null)}
+        onExecute={handleConfirmOrder}
+        isExecuting={isExecuting}
+        initialSide={tradeDefaults.side}
+        initialContracts={tradeDefaults.contracts}
+        initialPrice={tradeDefaults.price}
       />
 
       {/* Mobile Bottom Navigation Bar */}
@@ -377,7 +425,7 @@ export const App: React.FC = () => {
             {/* Focal Point Decision Card */}
             <BestTradeCard
               data={bestTrade}
-              onExecute={handleExecute}
+              onExecute={handleOpenTradeDrawer}
               isExecuting={isExecuting}
             />
 
@@ -388,8 +436,13 @@ export const App: React.FC = () => {
               </h3>
               <OpportunitiesTable
                 opportunities={opportunities}
-                onSelect={(opp) => {
-                  showToast(`Selected candidate: ${opp.ticker}`, 'info');
+                onSelect={(opp: any) => {
+                  const item = opp.payload || opp;
+                  const isNo = (item.action === 'BUY_NO');
+                  const side: 'yes' | 'no' = isNo ? 'no' : 'yes';
+                  const contracts = parseInt(item.recommended_contracts) || 10;
+                  const price = parseFloat(item.entry_price || item.max_entry_price || '0.50');
+                  handleOpenTradeDrawer(item.ticker, side, contracts, price);
                 }}
               />
             </div>
@@ -399,7 +452,7 @@ export const App: React.FC = () => {
         {activeTab === 'markets' && (
           <MarketBrowser 
             markets={markets} 
-            onExecuteTrade={handleExecute}
+            onExecuteTrade={handleOpenTradeDrawer}
           />
         )}
 

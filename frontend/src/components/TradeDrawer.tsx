@@ -21,6 +21,9 @@ interface TradeDrawerProps {
   onClose: () => void;
   onExecute: (ticker: string, side: 'yes' | 'no', contracts: number, price: number) => void;
   isExecuting?: boolean;
+  initialSide?: 'yes' | 'no';
+  initialContracts?: number;
+  initialPrice?: number;
 }
 
 export const TradeDrawer: React.FC<TradeDrawerProps> = ({
@@ -29,14 +32,21 @@ export const TradeDrawer: React.FC<TradeDrawerProps> = ({
   onClose,
   onExecute,
   isExecuting = false,
+  initialSide = 'yes',
+  initialContracts = 10,
+  initialPrice,
 }) => {
-  const [side, setSide] = useState<'yes' | 'no'>('yes');
-  const [contracts, setContracts] = useState<number>(10);
-  const [price, setPrice] = useState<number>(0.50);
+  const [side, setSide] = useState<'yes' | 'no'>(initialSide);
+  const [contracts, setContracts] = useState<number>(initialContracts);
+  const [price, setPrice] = useState<number>(initialPrice || 0.50);
 
   useEffect(() => {
-    if (market) {
-      if (side === 'yes' && market.yes_ask) {
+    if (market && isOpen) {
+      if (initialSide) setSide(initialSide);
+      if (initialContracts) setContracts(initialContracts);
+      if (initialPrice !== undefined && initialPrice > 0) {
+        setPrice(initialPrice);
+      } else if (side === 'yes' && market.yes_ask) {
         setPrice(parseFloat(market.yes_ask));
       } else if (side === 'no' && market.yes_bid) {
         setPrice(parseFloat((1.0 - parseFloat(market.yes_bid)).toFixed(2)));
@@ -44,7 +54,7 @@ export const TradeDrawer: React.FC<TradeDrawerProps> = ({
         setPrice(0.50);
       }
     }
-  }, [market, side]);
+  }, [market, isOpen, initialSide, initialContracts, initialPrice]);
 
   if (!isOpen || !market) return null;
 
