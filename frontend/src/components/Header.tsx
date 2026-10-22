@@ -12,9 +12,14 @@ import {
   ZoomIn,
   Sliders,
   Type,
-  Play
+  Play,
+  Download,
+  Wifi,
+  WifiOff
 } from 'lucide-react';
 import type { PortfolioSummary, FeedHealth } from '../types';
+
+export type FreshnessState = 'LIVE' | 'DELAYED' | 'STALE' | 'OFFLINE' | 'UNVERIFIED';
 
 interface HeaderProps {
   portfolio: PortfolioSummary | null;
@@ -23,9 +28,12 @@ interface HeaderProps {
   onRefresh: () => void;
   isRefreshing: boolean;
   onOpenAccount: () => void;
+  onOpenInstall?: () => void;
   isKalshiConnected?: boolean;
   isHalted?: boolean;
   onResumeTrading?: () => void;
+  dataFreshness?: FreshnessState;
+  lastDataAgeSec?: number;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -35,23 +43,17 @@ export const Header: React.FC<HeaderProps> = ({
   onRefresh,
   isRefreshing,
   onOpenAccount,
+  onOpenInstall,
   isKalshiConnected = false,
   isHalted = false,
   onResumeTrading,
+  dataFreshness = 'LIVE',
+  lastDataAgeSec = 2,
 }) => {
   const healthyFeeds = feeds.filter((f) => f.state === 'CONNECTED' || f.state === 'DEGRADED').length;
-  const totalFeeds = feeds.length || 6;
   const availableCash = portfolio ? parseFloat(portfolio.available_cash).toFixed(2) : '--.--';
 
   const [uiScale, setUiScale] = useState<'normal' | 'large' | 'xlarge' | 'jumbo'>('large');
-  const [liveClock, setLiveClock] = useState<string>(new Date().toISOString().slice(11, 19));
-
-  useEffect(() => {
-    const clockInterval = setInterval(() => {
-      setLiveClock(new Date().toISOString().slice(11, 19));
-    }, 1000);
-    return () => clearInterval(clockInterval);
-  }, []);
 
   useEffect(() => {
     const saved = localStorage.getItem('boi_ui_scale') as any;
@@ -66,143 +68,141 @@ export const Header: React.FC<HeaderProps> = ({
     document.documentElement.setAttribute('data-ui-scale', scale);
   };
 
+  // Truthful status badge styling & indicator
+  const getFreshnessBadge = () => {
+    switch (dataFreshness) {
+      case 'LIVE':
+        return {
+          label: 'LIVE',
+          sub: `${lastDataAgeSec}s ago`,
+          dotClass: 'bg-emerald-400 animate-pulse shadow-[0_0_8px_#34d399]',
+          badgeClass: 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400',
+        };
+      case 'DELAYED':
+        return {
+          label: 'DELAYED',
+          sub: `${lastDataAgeSec}s ago`,
+          dotClass: 'bg-amber-400',
+          badgeClass: 'bg-amber-500/10 border-amber-500/30 text-amber-400',
+        };
+      case 'STALE':
+        return {
+          label: 'STALE',
+          sub: `${lastDataAgeSec}s ago`,
+          dotClass: 'bg-orange-500',
+          badgeClass: 'bg-orange-500/15 border-orange-500/40 text-orange-400',
+        };
+      case 'OFFLINE':
+        return {
+          label: 'OFFLINE',
+          sub: 'No Network',
+          dotClass: 'bg-rose-500',
+          badgeClass: 'bg-rose-500/20 border-rose-500/40 text-rose-300',
+        };
+      default:
+        return {
+          label: 'SYNCING',
+          sub: 'checking',
+          dotClass: 'bg-zinc-500',
+          badgeClass: 'bg-zinc-800 border-zinc-700 text-zinc-400',
+        };
+    }
+  };
+
+  const badge = getFreshnessBadge();
+
   return (
-    <header className="border-b border-zinc-800 bg-[#090d10]/95 backdrop-blur-xl px-4 sm:px-8 py-3 sm:py-4 sticky top-0 z-40 shadow-xl">
-      <div className="max-w-7xl mx-auto flex items-center justify-between gap-3 sm:gap-6">
+    <header className="border-b border-zinc-800 bg-[#090d10]/95 backdrop-blur-xl px-3 sm:px-6 py-2.5 sm:py-3 sticky top-0 z-40 shadow-xl">
+      <div className="max-w-7xl mx-auto flex items-center justify-between gap-2 sm:gap-6">
         
-        {/* Brand & Connection Status */}
-        <div className="flex items-center gap-3 sm:gap-4">
-          <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/30">
-            <div className="h-2.5 w-2.5 rounded-full bg-emerald-400 animate-pulse" />
-            <span className="font-mono text-xs font-black text-emerald-400 uppercase tracking-wider flex items-center gap-1.5">
-              <span>LIVE</span>
-              <span className="text-zinc-500 text-[10px]">•</span>
-              <span className="text-zinc-300 font-mono text-[11px] font-bold">{liveClock} UTC</span>
+        {/* Brand & Truthful Connection Status */}
+        <div className="flex items-center gap-2.5 sm:gap-4">
+          <div
+            className={`flex items-center gap-2 px-2.5 py-1.5 rounded-full border transition ${badge.badgeClass}`}
+            title={`Authoritative data freshness: ${dataFreshness} (last verified ${lastDataAgeSec}s ago)`}
+          >
+            <div className={`h-2.5 w-2.5 rounded-full ${badge.dotClass}`} />
+            <span className="font-mono text-[11px] sm:text-xs font-black uppercase tracking-wider flex items-center gap-1.5">
+              <span>{badge.label}</span>
+              <span className="text-zinc-600 text-[9px]">•</span>
+              <span className="text-zinc-300 font-mono text-[10px] sm:text-[11px] font-bold">{badge.sub}</span>
             </span>
           </div>
 
           <div>
-            <h1 className="text-base sm:text-xl font-black tracking-tight text-white flex items-center gap-2">
-              <span>BETTING INTELLIGENCE OS</span>
-              <span className="hidden sm:inline-block text-xs px-2 py-0.5 rounded-md bg-zinc-800 text-zinc-300 border border-zinc-700 font-mono font-medium">
-                v1.0
+            <h1 className="text-sm sm:text-lg font-black tracking-tight text-white flex items-center gap-2">
+              <span className="truncate">BETTING INTELLIGENCE OS</span>
+              <span className="hidden md:inline-block text-[10px] px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-300 border border-zinc-700 font-mono">
+                PWA
               </span>
             </h1>
-            <p className="hidden md:block text-xs text-zinc-400 font-medium">
+            <p className="hidden xl:block text-[11px] text-zinc-400 font-medium">
               Wall Street–Grade Quantitative Intelligence &amp; Execution for Kalshi
             </p>
           </div>
         </div>
 
         {/* Bankroll & Action Controls */}
-        <div className="flex items-center gap-2 sm:gap-4">
+        <div className="flex items-center gap-2 sm:gap-3 shrink-0">
           
-          {/* Bankroll Card (Big & Clear) */}
+          {/* Install App Button (if handler provided) */}
+          {onOpenInstall && (
+            <button
+              onClick={onOpenInstall}
+              className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 text-xs font-mono font-bold transition active:scale-95 cursor-pointer shadow-sm"
+              title="Install Betting Intelligence OS to Home Screen"
+            >
+              <Download className="w-3.5 h-3.5" />
+              <span>Install App</span>
+            </button>
+          )}
+
+          {/* Cash Balance Card */}
           <button
             onClick={onOpenAccount}
-            className="flex items-center gap-2.5 sm:gap-3 px-3 sm:px-4 py-2 rounded-2xl bg-zinc-900/90 hover:bg-zinc-800 border border-zinc-800 hover:border-emerald-500/40 text-left transition active:scale-95 group shadow-md"
-            title="Click to view full bankroll & Kalshi portfolio"
+            className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-zinc-900/90 hover:bg-zinc-800 border border-zinc-800 hover:border-emerald-500/40 text-left transition active:scale-95 group shadow-sm cursor-pointer"
+            title="Click to view bankroll & Kalshi portfolio"
           >
-            <div className="p-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 group-hover:scale-110 transition">
-              <Wallet className="w-5 h-5" />
+            <div className="p-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 group-hover:scale-105 transition">
+              <Wallet className="w-4 h-4" />
             </div>
             <div>
-              <span className="text-[11px] text-zinc-400 uppercase font-semibold block leading-tight">
-                Cash Balance
+              <span className="text-[10px] text-zinc-400 uppercase font-semibold block leading-tight">
+                Cash
               </span>
-              <span className="text-base sm:text-xl font-black text-emerald-400 font-mono leading-tight">
+              <span className="text-xs sm:text-base font-black text-emerald-400 font-mono leading-tight">
                 ${availableCash}
               </span>
             </div>
           </button>
 
-          {/* Display Text Size Switcher */}
-          <div className="hidden lg:flex items-center bg-zinc-900 border border-zinc-800 rounded-xl p-1 gap-1">
-            <span className="text-xs text-zinc-400 px-2 font-medium flex items-center gap-1">
-              <Type className="w-3.5 h-3.5" /> Size:
-            </span>
-            <button
-              onClick={() => changeScale('normal')}
-              className={`px-2 py-1 rounded-lg text-xs font-semibold transition ${
-                uiScale === 'normal'
-                  ? 'bg-emerald-500 text-zinc-950 shadow-sm'
-                  : 'text-zinc-400 hover:text-white'
-              }`}
-              title="Standard Text Size"
-            >
-              Default
-            </button>
-            <button
-              onClick={() => changeScale('large')}
-              className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition ${
-                uiScale === 'large'
-                  ? 'bg-emerald-500 text-zinc-950 shadow-sm'
-                  : 'text-zinc-400 hover:text-white'
-              }`}
-              title="Large Text Size (Recommended for laptops)"
-            >
-              Large
-            </button>
-            <button
-              onClick={() => changeScale('xlarge')}
-              className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition ${
-                uiScale === 'xlarge'
-                  ? 'bg-emerald-500 text-zinc-950 shadow-sm'
-                  : 'text-zinc-400 hover:text-white'
-              }`}
-              title="Extra Large Text"
-            >
-              XL
-            </button>
-          </div>
-
-          {/* Link Kalshi Account Button (Big & Prominent) */}
-          <button
-            onClick={onOpenAccount}
-            className={`flex items-center gap-2 px-3.5 sm:px-5 py-2 sm:py-2.5 rounded-2xl border text-xs sm:text-sm font-bold transition active:scale-95 shadow-md ${
-              isKalshiConnected
-                ? 'bg-emerald-500/15 hover:bg-emerald-500/25 border-emerald-500/40 text-emerald-300'
-                : 'bg-emerald-600 hover:bg-emerald-500 border-emerald-500 text-zinc-950 font-black shadow-emerald-900/30'
-            }`}
-            title="Kalshi API Account Settings"
-          >
-            <Key className="w-4 h-4" />
-            <span>
-              {isKalshiConnected ? 'Kalshi Linked' : 'Link Kalshi'}
-            </span>
-            {isKalshiConnected && (
-              <span className="w-2 h-2 rounded-full bg-emerald-400" />
-            )}
-          </button>
-
-          {/* Refresh Button */}
+          {/* Refresh Action Button */}
           <button
             onClick={onRefresh}
             disabled={isRefreshing}
-            className="p-2.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-300 hover:text-white transition disabled:opacity-50 active:scale-95"
-            title="Scan / Refresh Live Data"
+            className="p-2 rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white hover:border-zinc-700 transition active:scale-95 cursor-pointer disabled:opacity-50"
+            title="Refresh all market data and portfolios"
           >
-            <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+            <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin text-emerald-400' : ''}`} />
           </button>
 
-          {/* Emergency Kill Switch / Resume Control */}
+          {/* Emergency Kill Switch or Resume */}
           {isHalted ? (
             <button
               onClick={onResumeTrading}
-              className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 border border-emerald-400 text-zinc-950 font-black transition active:scale-95 text-xs sm:text-sm animate-pulse shadow-lg shadow-emerald-950/50"
-              title="Trading is Halted. Click to Resume Trading"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-black text-xs font-mono shadow-md transition active:scale-95 cursor-pointer"
+              title="Click to resume trading operations"
             >
-              <Play className="h-4 w-4 fill-current" />
-              <span>RESUME</span>
+              <Play className="w-3.5 h-3.5 fill-current" />
+              <span className="hidden sm:inline">Resume</span>
             </button>
           ) : (
             <button
               onClick={onTriggerKillSwitch}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-rose-950/60 hover:bg-rose-900 border border-rose-800/80 text-rose-300 font-bold transition active:scale-95 text-xs sm:text-sm"
-              title="Emergency Hardware Kill Switch"
+              className="p-2 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 hover:bg-rose-500 hover:text-white transition active:scale-95 cursor-pointer"
+              title="Emergency Kill Switch: Immediately halt all automated trading"
             >
-              <ShieldAlert className="h-4 w-4 text-rose-400" />
-              <span>HALT</span>
+              <ShieldAlert className="w-4 h-4" />
             </button>
           )}
         </div>

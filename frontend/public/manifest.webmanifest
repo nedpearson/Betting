@@ -1,0 +1,54 @@
+{
+  "name": "Betting Intelligence OS",
+  "short_name": "Betting OS",
+  "description": "Wall Street–grade quantitative prediction intelligence and automated execution system for Kalshi event contracts.",
+  "start_url": "/",
+  "id": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#070b0e",
+  "theme_color": "#10b981",
+  "categories": ["finance", "utilities", "productivity"],
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Best Trade",
+      "short_name": "Best Trade",
+      "description": "View today's top mathematical opportunity",
+      "url": "/?tab=decision",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Live Markets",
+      "short_name": "Markets",
+      "description": "Explore live Kalshi contract order books",
+      "url": "/?tab=markets",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Portfolio",
+      "short_name": "Portfolio",
+      "description": "View verified cash, positions, and fills",
+      "url": "/?tab=portfolio",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    }
+  ]
+}

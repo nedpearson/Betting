@@ -25,6 +25,7 @@ interface TradeDrawerProps {
   initialContracts?: number;
   initialPrice?: number;
   availableCash?: string | number;
+  isOffline?: boolean;
 }
 
 export const TradeDrawer: React.FC<TradeDrawerProps> = ({
@@ -37,6 +38,7 @@ export const TradeDrawer: React.FC<TradeDrawerProps> = ({
   initialContracts = 10,
   initialPrice,
   availableCash = '0.00',
+  isOffline = false,
 }) => {
   const [side, setSide] = useState<'yes' | 'no'>(initialSide);
   const [contracts, setContracts] = useState<number>(initialContracts);
@@ -379,7 +381,12 @@ export const TradeDrawer: React.FC<TradeDrawerProps> = ({
 
           {/* Sticky Action Footer - Always visible regardless of screen height */}
           <div className="p-4 sm:p-5 bg-[#0b1013] border-t border-zinc-800 shrink-0 shadow-2xl space-y-2">
-            {isInsufficient && (
+            {isOffline && (
+              <div className="p-3 rounded-xl bg-rose-500/15 border border-rose-500/40 text-rose-300 text-xs font-mono text-center font-bold">
+                ⚠️ DEVICE OFFLINE: Live market connectivity is required to execute real-money orders.
+              </div>
+            )}
+            {isInsufficient && !isOffline && (
               <div className="flex items-center justify-between p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs font-mono">
                 <span>Exceeds cash balance (${availableCashNum.toFixed(2)} avail)</span>
                 <button
@@ -393,9 +400,11 @@ export const TradeDrawer: React.FC<TradeDrawerProps> = ({
             )}
             <button
               type="submit"
-              disabled={isExecuting || isInsufficient}
+              disabled={isExecuting || isInsufficient || isOffline}
               className={`w-full h-14 sm:h-16 px-6 rounded-2xl font-black text-base sm:text-lg shadow-xl transition flex items-center justify-center gap-3 active:scale-95 cursor-pointer ${
-                isInsufficient
+                isOffline
+                  ? 'bg-zinc-800 text-rose-400 cursor-not-allowed border border-rose-500/30'
+                  : isInsufficient
                   ? 'bg-zinc-800 text-zinc-500 cursor-not-allowed border border-zinc-700'
                   : side === 'yes'
                   ? 'bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-zinc-950 shadow-emerald-500/30'
@@ -407,6 +416,8 @@ export const TradeDrawer: React.FC<TradeDrawerProps> = ({
                   <div className="w-5 h-5 border-2 border-current border-t-transparent rounded-full animate-spin" />
                   <span>Submitting Order to Kalshi...</span>
                 </>
+              ) : isOffline ? (
+                <span>OFFLINE — TRADING DISABLED</span>
               ) : isInsufficient ? (
                 <span>INSUFFICIENT BALANCE (${availableCashNum.toFixed(2)} AVAIL)</span>
               ) : (
