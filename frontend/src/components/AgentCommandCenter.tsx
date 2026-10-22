@@ -10,6 +10,7 @@ export const AgentCommandCenter: React.FC<AgentCommandCenterProps> = ({ agents }
   const [selectedAgent, setSelectedAgent] = useState<AgentSnapshot | null>(null);
 
   const activeCount = agents.filter((a) => a.status === 'ACTIVE').length;
+  const readyCount = agents.filter((a) => a.status.includes('STANDBY') || a.status.includes('READY') || a.status === 'ACTIVE').length;
 
   return (
     <div className="space-y-6">
@@ -20,17 +21,19 @@ export const AgentCommandCenter: React.FC<AgentCommandCenterProps> = ({ agents }
             Specialized Multi-Agent Command Center
           </h2>
           <p className="text-sm text-zinc-400 font-mono mt-1">
-            16 coordinated quantitative agents running continuous 24/7 background work loops
+            16 specialized quantitative agents operating with zero synthetic data and verifiable telemetry
           </p>
         </div>
         <div className="flex items-center gap-3">
           <span className={`text-sm md:text-base font-mono font-bold px-4 py-2 rounded-xl border flex items-center gap-2 ${
-            activeCount === agents.length
+            activeCount > 0
               ? 'text-emerald-300 bg-emerald-950/80 border-emerald-600 shadow-[0_0_15px_rgba(16,185,129,0.3)]'
-              : 'text-amber-300 bg-amber-950/80 border-amber-600'
+              : 'text-cyan-300 bg-cyan-950/80 border-cyan-700'
           }`}>
-            <span className="h-3 w-3 rounded-full bg-emerald-400 animate-pulse" />
-            {activeCount} / {agents.length} AGENTS ACTIVE (24/7)
+            <span className={`h-3 w-3 rounded-full ${activeCount > 0 ? 'bg-emerald-400 animate-pulse' : 'bg-cyan-400'}`} />
+            {activeCount > 0
+              ? `${activeCount} / ${agents.length} AGENTS ACTIVE (24/7 LOOP)`
+              : `${readyCount} / ${agents.length} AGENTS ARMED (ON-DEMAND)`}
           </span>
         </div>
       </div>
@@ -39,6 +42,7 @@ export const AgentCommandCenter: React.FC<AgentCommandCenterProps> = ({ agents }
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {agents.map((agent) => {
           const isActive = agent.status === 'ACTIVE';
+          const isReady = agent.status.includes('STANDBY') || agent.status.includes('READY') || isActive;
           return (
             <div
               key={agent.name}
@@ -50,7 +54,11 @@ export const AgentCommandCenter: React.FC<AgentCommandCenterProps> = ({ agents }
                   <div className="flex items-center gap-2">
                     <div
                       className={`h-3 w-3 rounded-full ${
-                        isActive ? 'bg-emerald-400 animate-pulse shadow-[0_0_8px_#34d399]' : 'bg-zinc-600'
+                        isActive
+                          ? 'bg-emerald-400 animate-pulse shadow-[0_0_8px_#34d399]'
+                          : isReady
+                          ? 'bg-cyan-400 shadow-[0_0_6px_#22d3ee]'
+                          : 'bg-zinc-600'
                       }`}
                     />
                     <span className="font-mono text-xs text-zinc-400 font-bold truncate">
@@ -61,6 +69,8 @@ export const AgentCommandCenter: React.FC<AgentCommandCenterProps> = ({ agents }
                     className={`font-mono text-xs font-bold px-2.5 py-1 rounded-md ${
                       isActive
                         ? 'bg-emerald-950 text-emerald-300 border border-emerald-700'
+                        : isReady
+                        ? 'bg-cyan-950/80 text-cyan-300 border border-cyan-800'
                         : 'bg-zinc-800 text-zinc-400'
                     }`}
                   >

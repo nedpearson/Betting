@@ -101,8 +101,11 @@ def create_app(
         return {"count": len(recs), "opportunities": recs}
 
     @app.get("/api/markets")
-    async def get_markets(limit: int = 200, category: str | None = None):
-        """List tracked markets with executable prices."""
+    async def get_markets(limit: int = 200, category: str | None = None, ticker: str | None = None):
+        """List tracked markets with executable prices, or return market detail if ticker specified."""
+        if ticker:
+            return await get_market_detail(ticker)
+
         async with db.session() as s:
             stmt = select(MarketRecord).limit(limit)
             res = await s.execute(stmt)
@@ -210,7 +213,7 @@ def create_app(
                         k_positions.append({
                             "ticker": mp.get("ticker", ""),
                             "side": "yes",
-                            "contracts": str(round(float(pos_fp) / 100.0, 2)) if float(pos_fp) >= 100 else str(pos_fp),
+                            "contracts": str(round(float(pos_fp), 2)),
                             "avg_entry": f"{float(cost):.2f}" if cost else "0.00",
                             "current_mid": None,
                             "unrealized_pnl": f"{float(pnl):.2f}",

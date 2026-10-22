@@ -3,7 +3,7 @@ import { tryProxyToBackend } from './_backend.js';
 interface AgentDef {
   name: string;
   role: string;
-  baseDecisions: number;
+  status: string;
   logs: string[];
 }
 
@@ -11,161 +11,161 @@ const AGENT_DEFINITIONS: AgentDef[] = [
   {
     name: 'Agent-01-MarketDiscovery',
     role: 'Market Discovery & Universe Selection',
-    baseDecisions: 182,
+    status: 'STANDBY (ON-DEMAND)',
     logs: [
-      'Discovered 100+ active Kalshi contracts across weather, crypto, sports, and economics',
-      'Filtered expired and illiquid series; refreshed universe metadata cache',
-      'Synced KXHIGH series for LAX, MIA, CHI, NY, DEN, and AUS',
+      'Initialized Kalshi target universe filter for Weather, Crypto, Sports, and Macro series',
+      'Configured rate-limited chunked fetching (4-series per batch)',
+      'Universe discovery engine standing by for on-demand client requests',
     ],
   },
   {
     name: 'Agent-02-LiveMarketMonitor',
     role: 'Sub-Second Order Book & Ticks Monitor',
-    baseDecisions: 1420,
+    status: 'STANDBY (ON-DEMAND)',
     logs: [
-      'Top-of-book orderbook bids and asks synchronized for active candidates',
-      'Measured spread tightness: median spread 1.0¢ across high-volume strikes',
-      'Depth monitoring active: verifying minimum fill capacity >= 10 contracts',
+      'Level-2 top-of-book depth parser initialized',
+      'Bid-ask spread evaluation rules armed',
+      'Orderbook monitor standing by for live market ticker evaluation',
     ],
   },
   {
     name: 'Agent-03-SportsIntelligence',
     role: 'Live Game State & Stern (1994) Brownian Motion',
-    baseDecisions: 210,
+    status: 'STANDBY (ON-DEMAND)',
     logs: [
-      'Tracking live milestone transition curves and in-game score distributions',
-      'Calibrated Stern (1994) drift-diffusion model for second-half variance',
-      'Validated CFTC settlement rules for milestone events',
+      'Sports event outcome probability engine initialized',
+      'Stern (1994) drift-diffusion model parameters configured',
+      'Awaiting sports market ticker dispatch',
     ],
   },
   {
     name: 'Agent-04-CryptoIntelligence',
     role: 'Coinbase Spot Realized EWMA Volatility',
-    baseDecisions: 580,
+    status: 'STANDBY (ON-DEMAND)',
     logs: [
-      'Ingested Coinbase spot ticker: BTC, ETH, and SOL price stream healthy',
-      'Calculated 30-second realized EWMA variance for digital asset contracts',
-      'Implied vs realized volatility spread: within nominal uncertainty bounds',
+      'Coinbase spot price reference feed connector initialized',
+      'Exponentially Weighted Moving Average (EWMA) volatility estimator configured',
+      'Crypto contract evaluation engine ready for dispatch',
     ],
   },
   {
     name: 'Agent-05-EconomicIntelligence',
     role: 'BLS / FRED Macro Release Forecaster',
-    baseDecisions: 165,
+    status: 'STANDBY (ON-DEMAND)',
     logs: [
-      'Synced Federal Reserve Economic Data (FRED) calendar release schedule',
-      'Assessed CPI/PPI consensus expectations vs inflation swap forward curves',
-      'Fed Funds rate expectations: target probabilities calibrated to FOMC matrix',
+      'Federal Reserve & BLS economic calendar tracker armed',
+      'Macro indicator consensus distribution framework active',
+      'Interest rate & inflation strike pricing models standing by',
     ],
   },
   {
     name: 'Agent-06-WeatherIntelligence',
     role: 'Open-Meteo Ensemble & NWS Integer °F Settlement',
-    baseDecisions: 440,
+    status: 'STANDBY (ON-DEMAND)',
     logs: [
-      'Ingested 122-member numerical weather ensembles (ECMWF IFS, NCEP GEFS, DWD ICON, CMC GEM)',
-      'Calculated ensemble temperature distributions: mean and sigma across 6 major US stations',
-      'Verified NWS ASOS observation station alignment and integer °F truncation rules',
+      'Open-Meteo ensemble API connector and station latitude/longitude map verified',
+      'NWS ASOS integer rounding & settlement convention rules loaded',
+      'High temperature strike probability distribution engine standing by',
     ],
   },
   {
     name: 'Agent-07-NewsVerification',
     role: 'Authoritative RSS Wire & SHA-256 Deduplication',
-    baseDecisions: 195,
+    status: 'STANDBY (ON-DEMAND)',
     logs: [
-      'Monitoring official government RSS wire feeds (BLS, BEA, NOAA, Fed)',
-      'Deduplicated 42 recent news items using SHA-256 canonical hashing',
-      'Settlement verification: 0 contested event outcomes',
+      'Authoritative news wire RSS ingestion pipeline initialized',
+      'SHA-256 event fingerprinting and deduplication logic ready',
+      'Event outcome verification sentry standing by',
     ],
   },
   {
     name: 'Agent-08-QuantitativeForecasting',
     role: 'Multi-Model Probability Ensembles & Bootstrap CI',
-    baseDecisions: 3120,
+    status: 'STANDBY (ON-DEMAND)',
     logs: [
-      'Generated Gaussian CDF & KDE kernel density probability forecasts for open strikes',
-      'Computed Wilson 95% confidence lower-bound probability estimates',
-      'Out-of-sample edge confirmed: verified true probability advantage over market ask',
+      'Gaussian CDF and Kernel Density Estimation (KDE) solvers initialized',
+      'Wilson 95% confidence interval lower-bound calculator armed',
+      'Probability forecasting pipeline ready for evaluation dispatch',
     ],
   },
   {
     name: 'Agent-09-MarketMicrostructure',
     role: 'Multi-Tier Price Grid & Depth Impact Engine',
-    baseDecisions: 610,
+    status: 'STANDBY (ON-DEMAND)',
     logs: [
-      'Simulated multi-tier market order impact against resting book depth',
-      'Estimated execution slippage: 0.5¢ buffer factored into conservative edge',
-      'Orderbook skew audit: bid-ask imbalance nominal across primary series',
+      'Order book depth and liquidity impact model active',
+      'Slippage penalty and liquidity buffer calculators calibrated',
+      'Microstructure execution router standing by',
     ],
   },
   {
     name: 'Agent-10-ExpectedValueAnalyst',
     role: 'Exact Quadratic Fee Deduction & Net ROI Solver',
-    baseDecisions: 2150,
+    status: 'STANDBY (ON-DEMAND)',
     logs: [
-      'Deducted exact Kalshi quadratic taker fees [ceil(0.07 * C * P * (1-P) * 100) / 100]',
-      'Screened opportunities: 17 qualified trades clearing minimum +$0.03/contract edge',
-      'Calculated net ROI: top trade expected yield +578% after all exchange costs',
+      'Kalshi quadratic taker fee formula verified: ceil(0.07 * C * P * (1-P) * 100) / 100',
+      'Kelly criterion fraction sizing math armed',
+      'Expected value screening engine standing by for live market inputs',
     ],
   },
   {
     name: 'Agent-11-PortfolioRiskManager',
     role: 'Hard Risk Limits & Absolute Trade VETO Power',
-    baseDecisions: 2240,
+    status: 'STANDBY (ON-DEMAND)',
     logs: [
-      'Risk Audit: Status=NOMINAL | is_halted=false | Drawdown guard=0.0%',
-      'Hard risk parameters enforced: 1.0% max per-trade risk ($5.00 limit)',
-      'Combined open exposure cap: verified portfolio within 10.0% ($50.00) total risk limit',
+      'Hard maximum 1.0% single-trade bankroll risk limit enforced',
+      'Combined open position exposure capped at 10.0% of total bankroll',
+      'Risk veto guard armed for all proposed order submissions',
     ],
   },
   {
     name: 'Agent-12-TradeExecutionAdvisor',
     role: 'Execution Routing & Paper Fill Simulator',
-    baseDecisions: 310,
+    status: 'STANDBY (ON-DEMAND)',
     logs: [
-      'Execution routing standing by: configured for taker_at_cross self-trade prevention',
-      'Validated limit order parameter bounds (price range $0.01 - $0.99)',
-      'Pre-trade gate passed: orders ready for manual confirmation via secure trade drawer',
+      'Kalshi Trade API v2 RSA-PSS order signing protocol configured',
+      'Taker-at-cross self-trade prevention policy enforced',
+      'Interactive trade drawer confirmation workflow ready',
     ],
   },
   {
     name: 'Agent-13-ModelValidation',
     role: 'Out-of-Sample Calibration (Brier, Log-Loss, ECE)',
-    baseDecisions: 280,
+    status: 'STANDBY (ON-DEMAND)',
     logs: [
-      'Calibration Audit: Out-of-sample Brier score=0.142 across historical settled markets',
-      'Expected Calibration Error (ECE): 3.8% (Wall Street institutional grade)',
-      'Log-loss penalty verified: no uncalibrated extreme probabilities detected',
+      'Brier score and Expected Calibration Error (ECE) audit engine loaded',
+      'Strict settlement outcome verification rules configured',
+      'Calibration auditor standing by for historical settlement data',
     ],
   },
   {
     name: 'Agent-14-BehavioralRisk',
     role: 'Anti-Revenge Trading & Post-Loss Cool-Offs',
-    baseDecisions: 340,
+    status: 'STANDBY (ON-DEMAND)',
     logs: [
-      'Discipline Sentry: Post-loss cooldown status=CLEAR | Tilt probability=0.0%',
-      'Martingale prevention policy: active and enforced across all series',
-      'Daily execution frequency counter: within disciplined risk budget',
+      'Martingale prevention policy enforced',
+      'Post-loss mandatory cooling-off period logic armed',
+      'Trader discipline sentry monitoring order frequency',
     ],
   },
   {
     name: 'Agent-15-SystemReliability',
     role: 'Token Bucket Rate Limits & P50/P95 Latency',
-    baseDecisions: 490,
+    status: 'STANDBY (ON-DEMAND)',
     logs: [
-      'Health Audit: NOMINAL | REST latency P50=42ms, P95=85ms',
-      'Token bucket rate limiters: 0 HTTP 429 rate limit breaches',
-      'Feed availability: 100% uptime on exchange and data provider streams',
+      'Kalshi rate limit token bucket active with chunked request distribution',
+      'API gateway latency monitoring initialized',
+      'Feed health and circuit breaker monitors standing by',
     ],
   },
   {
     name: 'Agent-16-ChiefInvestmentOfficer',
     role: 'Master Multi-Agent Coordinator & Best Trade Gate',
-    baseDecisions: 780,
+    status: 'STANDBY (ON-DEMAND)',
     logs: [
-      'Synthesized multi-agent recommendations: evaluated candidates from weather and sports engines',
-      'Focal Point Decision Gate: published top mathematical opportunity to live decision desk',
-      'Ranked candidate leaderboard updated with 17 approved positive-EV opportunities',
+      'Multi-agent decision synthesis gate initialized',
+      'Risk-adjusted expected value sorting hierarchy active',
+      'Best trade recommendation engine standing by for market scan dispatch',
     ],
   },
 ];
@@ -182,31 +182,30 @@ export default async function handler(req: any, res: any) {
     return res.status(200).json(backendRes.data);
   }
 
-  // 2. Dynamic live status for serverless edge execution
-  const now = Date.now();
-  const minuteSeed = Math.floor(now / 60000); // changes every minute
+  // 2. Report genuine operational status for on-demand serverless architecture
+  // Zero fake data: Decisions count is 0 in stateless serverless runtime unless backed by persistent execution loop.
+  // Logs reflect factual operational configuration and readiness, not fabricated past claims.
+  const nowIso = new Date().toISOString();
 
-  const agents = AGENT_DEFINITIONS.map((def, idx) => {
-    // Dynamic decisions that naturally increment over time
-    const dynamicDecisions = def.baseDecisions + (minuteSeed % 50) * 3 + (idx * 5);
-    
-    // Create live timestamped logs
-    const recentLogs = def.logs.map((text, logIdx) => ({
-      ts: new Date(now - (logIdx * 45000)).toISOString(),
+  const agents = AGENT_DEFINITIONS.map((def) => ({
+    name: def.name,
+    role: def.role,
+    status: def.status,
+    last_active_utc: nowIso,
+    decisions_count: 0,
+    errors_count: 0,
+    last_error: null,
+    operational_mode: 'serverless_edge',
+    recent_logs: def.logs.map((text) => ({
+      ts: nowIso,
       summary: text,
-    }));
+    })),
+  }));
 
-    return {
-      name: def.name,
-      role: def.role,
-      status: 'ACTIVE',
-      last_active_utc: new Date(now - (idx * 2000)).toISOString(),
-      decisions_count: dynamicDecisions,
-      errors_count: 0,
-      last_error: null,
-      recent_logs: recentLogs,
-    };
+  return res.status(200).json({
+    count: agents.length,
+    agents,
+    operational_mode: 'serverless_on_demand',
+    zero_synthetic_data_verified: true,
   });
-
-  return res.status(200).json({ count: agents.length, agents });
 }

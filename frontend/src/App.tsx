@@ -248,8 +248,9 @@ export const App: React.FC = () => {
           totalCost: ((contracts * price) + parseFloat(res.fees || '0')).toFixed(2),
           message: res.message,
         });
-      } else if (res.status === 'REJECTED' || res.status === 'rejected') {
-        showToast(`Order rejected: ${res.reason || res.detail || 'Risk limit or gate blocked execution'}`, 'warn');
+      } else if (res.status === 'REJECTED' || res.status === 'rejected' || res.status === 'BACKEND_ERROR' || !res.success) {
+        const diagMsg = res.balance_diagnostics?.remediation ? ` - ${res.balance_diagnostics.remediation}` : '';
+        showToast(`${res.reason || res.detail || 'Execution rejected'}${diagMsg}`, 'warn');
       } else {
         showToast(`Order response: ${res.status || 'Received'}`, 'info');
       }
