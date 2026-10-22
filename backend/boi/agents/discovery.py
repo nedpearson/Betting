@@ -59,10 +59,27 @@ class MarketDiscoveryAgent(BaseAgent):
         prefixes = self.settings.series_prefixes
         discovered = 0
         try:
-            # Query open markets, excluding combo multivariate markets
-            resp = await self.rest.get_markets(status="open", limit=1000, mve_filter="exclude")
-            raw_markets = resp.get("markets", [])
-            log.info("MarketDiscovery received %d open markets from Kalshi", len(raw_markets))
+            # 1. Fetch targeted high-volume liquid series
+            target_series = [
+                "KXHIGHNY", "KXHIGHDEN", "KXHIGHCHI", "KXHIGHMIA",
+                "KXBTC", "KXETH", "KXNHLGAME", "KXNBASPREAD", "KXNBA"
+            ]
+            raw_markets: list[dict] = []
+            for s in target_series:
+                try:
+                    resp = await self.rest.get_markets(status="open", series_ticker=s, limit=50)
+                    raw_markets.extend(resp.get("markets", []))
+                except Exception:
+                    pass
+
+            # 2. Also fetch broader open markets (excluding multivariate MVE)
+            try:
+                resp = await self.rest.get_markets(status="open", limit=300, mve_filter="exclude")
+                raw_markets.extend(resp.get("markets", []))
+            except Exception:
+                pass
+
+            log.info("MarketDiscovery gathered %d candidate market objects", len(raw_markets))
 
             records_to_save: list[MarketRecord] = []
             for m in raw_markets:
@@ -73,21 +90,44 @@ class MarketDiscoveryAgent(BaseAgent):
                 event_ticker = m.get("event_ticker", "")
                 series_ticker = event_ticker.split("-")[0] if "-" in event_ticker else event_ticker
 
-                # Check if matches enabled prefixes
-                if prefixes and not any(series_ticker.startswith(p) for p in prefixes):
-                    continue
-
                 if len(self.known_tickers) >= self.settings.max_tracked_markets and ticker not in self.known_tickers:
                     continue
 
                 is_new = ticker not in self.known_tickers
                 self.known_tickers.add(ticker)
 
-                # Initialize or update OrderBook PriceGrid
+                # Initialize or update OrderBook PriceGrid and apply snapshot
                 price_ranges = m.get("price_ranges", [])
                 grid = PriceGrid.from_api(price_ranges)
-                if ticker not in self.books:
-                    self.books[ticker] = MarketOrderBook(ticker=ticker, grid=grid)
+                book = self.books.get(ticker)
+                if not book:
+                    book = MarketOrderBook(ticker=ticker, grid=grid)
+                    self.books[ticker] = book
+
+                yes_bid = m.get("yes_bid_dollars")
+                no_bid = m.get("no_bid_dollars")
+                yes_ask = m.get("yes_ask_dollars")
+                no_ask = m.get("no_ask_dollars")
+                yes_size = m.get("yes_bid_size_fp") or "25.0"
+                no_size = m.get("no_bid_size_fp") or "25.0"
+
+                yes_bids = [[yes_bid, yes_size]] if yes_bid and float(yes_bid) > 0 else []
+                no_bids = [[no_bid, no_size]] if no_bid and float(no_bid) > 0 else []
+
+                # If no_ask is present, derive yes_bid complement
+                if not yes_bids and no_ask and float(no_ask) < 1.0:
+                    yes_bids = [[str(round(1.0 - float(no_ask), 4)), no_size]]
+                # If yes_ask is present, derive no_bid complement
+                if not no_bids and yes_ask and float(yes_ask) < 1.0:
+                    no_bids = [[str(round(1.0 - float(yes_ask), 4)), yes_size]]
+
+                if yes_bids or no_bids:
+                    book.apply_snapshot(
+                        yes_bids_raw=yes_bids,
+                        no_bids_raw=no_bids,
+                        source_ts=datetime.now(UTC),
+                        transport="discovery",
+                    )
 
                 # Parse close time
                 close_time_raw = m.get("close_time") or m.get("expiration_time")

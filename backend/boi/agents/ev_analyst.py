@@ -154,7 +154,7 @@ class ExpectedValueAnalystAgent(BaseAgent):
                 grid=book.grid,
             )
             self.record_decision(
-                f"Candidate {action} on {ticker}: Edge={best_eval.conservative_ev_per_contract:+$0.4f} ROI={best_eval.net_roi:.1%}",
+                f"Candidate {action} on {ticker}: Edge=${best_eval.conservative_ev_per_contract:+.4f} ROI={best_eval.net_roi:.1%}",
                 best_eval.to_dict(),
             )
         else:

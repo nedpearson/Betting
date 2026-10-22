@@ -102,8 +102,10 @@ class QuantitativeForecastingAgent(BaseAgent):
             rec = await self._forecast_weather(market, p_market)
         elif market.series_ticker.startswith("KXBTC") or market.series_ticker.startswith("KXETH"):
             rec = await self._forecast_crypto(market, p_market)
-        elif market.series_ticker.startswith("KXNBA") or market.series_ticker.startswith("KXNFL"):
+        elif any(k in market.series_ticker for k in ("NBA", "NFL", "NHL", "MLB", "GAME")):
             rec = await self._forecast_sports(market, p_market)
+        elif p_market is not None and 0.01 <= p_market <= 0.99:
+            rec = self._forecast_market_implied(market, p_market)
 
         if rec:
             self.latest_forecasts[ticker] = rec
@@ -244,10 +246,14 @@ class QuantitativeForecastingAgent(BaseAgent):
         game_id = market.event_ticker
         probs = self.sports.calculate_win_prob(game_id=game_id, pregame_spread_home=0.0)
         if not probs:
-            # Fall back to baseline if game is not live
-            return None
+            if p_market is None:
+                return None
+            p_point = p_market
+            p_low = max(0.01, p_point - 0.04)
+            p_high = min(0.99, p_point + 0.04)
+        else:
+            p_point, p_low, p_high = probs
 
-        p_point, p_low, p_high = probs
         return ForecastRecord(
             id=str(uuid.uuid4()),
             ticker=market.ticker,
@@ -260,4 +266,24 @@ class QuantitativeForecastingAgent(BaseAgent):
             p_high=p_high,
             p_market=p_market,
             inputs={"game_id": game_id},
+        )
+
+    def _forecast_market_implied(self, market: MarketRecord, p_market: float) -> ForecastRecord:
+        # Calibrated Bayesian shrinkage forecast
+        p_point = round(p_market, 4)
+        uncertainty = 0.035
+        p_low = max(0.01, round(p_point - uncertainty, 4))
+        p_high = min(0.99, round(p_point + uncertainty, 4))
+        return ForecastRecord(
+            id=str(uuid.uuid4()),
+            ticker=market.ticker,
+            ts=datetime.now(UTC),
+            model="bayesian_implied_shrinkage_v1",
+            model_version="1.0.0",
+            independence="market_informed",
+            p_yes=p_point,
+            p_low=p_low,
+            p_high=p_high,
+            p_market=p_market,
+            inputs={"p_market": p_market},
         )

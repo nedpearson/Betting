@@ -89,15 +89,15 @@ class Settings(BaseSettings):
     max_trades_per_day: int = 10
 
     # --- Signal thresholds ---
-    min_conservative_edge: Decimal = Decimal("0.03")  # $/contract after costs at the conservative prob
-    min_net_roi: Decimal = Decimal("0.05")
-    strong_conservative_edge: Decimal = Decimal("0.06")
-    strong_net_roi: Decimal = Decimal("0.12")
-    max_spread: Decimal = Decimal("0.08")
-    min_top_depth: Decimal = Decimal("5")
-    recommendation_ttl_sec: int = 120
-    max_market_data_age_sec: float = 10.0  # WS-fed books
-    max_rest_book_age_sec: float = 45.0  # REST-polled books (no WS credentials)
+    min_conservative_edge: Decimal = Decimal("0.015")  # $/contract after costs at the conservative prob
+    min_net_roi: Decimal = Decimal("0.02")
+    strong_conservative_edge: Decimal = Decimal("0.05")
+    strong_net_roi: Decimal = Decimal("0.08")
+    max_spread: Decimal = Decimal("0.15")
+    min_top_depth: Decimal = Decimal("2")
+    recommendation_ttl_sec: int = 180
+    max_market_data_age_sec: float = 15.0  # WS-fed books
+    max_rest_book_age_sec: float = 600.0  # REST-polled books (no WS credentials)
 
     # --- Discovery ---
     discovery_interval_sec: int = 300

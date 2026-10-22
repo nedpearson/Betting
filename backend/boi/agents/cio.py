@@ -215,7 +215,7 @@ class ChiefInvestmentOfficerAgent(BaseAgent):
         return (
             f"Model {forecast.model} calculates true win probability at {side_p:.1%} (conservative lower-bound: {cons_p:.1%}) "
             f"versus market-implied {mkt_p:.1%}. After factoring exchange taker fees and slippage buffer, the trade has a "
-            f"statistically defensive edge of {edge:+$0.3f}/contract with expected net ROI of {roi:.1%} on deployed risk."
+            f"statistically defensive edge of ${edge:+.3f}/contract with expected net ROI of {roi:.1%} on deployed risk."
         )
 
     async def _persist_and_publish_recommendation(self, rec: RecommendationRecord) -> None:
