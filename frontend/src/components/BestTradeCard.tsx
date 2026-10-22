@@ -74,6 +74,24 @@ export const BestTradeCard: React.FC<BestTradeCardProps> = ({
   const opp = data.opportunity;
   const isYes = opp.action === 'BUY_YES';
 
+  const rawEdge = String(opp.conservative_edge || '0');
+  const edgeNum = parseFloat(rawEdge.replace('+', '').replace('$', '')) || 0;
+  const edgeDisplay = `+$${edgeNum.toFixed(3)}`;
+
+  const rawRoi = String(opp.net_roi || '0');
+  let roiDisplay = '+0.0%';
+  if (rawRoi.includes('%')) {
+    roiDisplay = rawRoi.startsWith('+') ? rawRoi : `+${rawRoi}`;
+  } else {
+    const num = parseFloat(rawRoi) || 0;
+    roiDisplay = `+${(num < 2 ? num * 100 : num).toFixed(1)}%`;
+  }
+
+  const contracts = parseInt(opp.recommended_contracts) || 1;
+  const stakeCost = opp.recommended_stake 
+    ? parseFloat(opp.recommended_stake).toFixed(2)
+    : (contracts * (parseFloat(opp.entry_price || opp.max_entry_price || '0.50'))).toFixed(2);
+
   return (
     <div className="bg-[#0e1417] border-2 border-emerald-500/60 rounded-3xl p-6 sm:p-8 shadow-2xl shadow-emerald-950/30 relative overflow-hidden">
       {/* Background Glow */}
@@ -126,8 +144,8 @@ export const BestTradeCard: React.FC<BestTradeCardProps> = ({
               onExecute(
                 opp.ticker,
                 isYes ? 'yes' : 'no',
-                parseInt(opp.recommended_contracts) || 1,
-                parseFloat(opp.max_entry_price)
+                contracts,
+                parseFloat(opp.max_entry_price || opp.entry_price || '0.50')
               )
             }
             disabled={isExecuting}
@@ -146,7 +164,7 @@ export const BestTradeCard: React.FC<BestTradeCardProps> = ({
             Conservative Edge
           </div>
           <div className="text-2xl sm:text-3xl font-black text-emerald-400 font-mono">
-            +${parseFloat(opp.conservative_edge).toFixed(3)}
+            {edgeDisplay}
           </div>
           <div className="text-xs text-zinc-400 mt-1 font-medium">After all exchange fees</div>
         </div>
@@ -156,7 +174,7 @@ export const BestTradeCard: React.FC<BestTradeCardProps> = ({
             Net Return (ROI)
           </div>
           <div className="text-2xl sm:text-3xl font-black text-white font-mono">
-            +{(parseFloat(opp.net_roi) * 100).toFixed(1)}%
+            {roiDisplay}
           </div>
           <div className="text-xs text-zinc-400 mt-1 font-medium">Expected net yield</div>
         </div>
@@ -176,10 +194,10 @@ export const BestTradeCard: React.FC<BestTradeCardProps> = ({
             Suggested Size
           </div>
           <div className="text-2xl sm:text-3xl font-black text-emerald-400 font-mono">
-            {opp.recommended_contracts} <span className="text-sm text-zinc-400 font-bold">contracts</span>
+            {contracts} <span className="text-sm text-zinc-400 font-bold">contracts</span>
           </div>
           <div className="text-xs text-zinc-400 mt-1 font-medium">
-            Risk: ${(parseFloat(opp.max_entry_price) * parseInt(opp.recommended_contracts)).toFixed(2)}
+            Risk: ${stakeCost}
           </div>
         </div>
       </div>

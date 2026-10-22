@@ -54,12 +54,33 @@ export const OpportunitiesTable: React.FC<OpportunitiesTableProps> = ({
           </thead>
           <tbody className="divide-y divide-zinc-800/60">
             {opportunities.map((opp, idx) => {
-              const isYes = opp.action === 'BUY_YES';
+              const item = (opp as any).payload || opp;
+              const isYes = (item.action || opp.action) === 'BUY_YES';
+              const ticker = item.ticker || opp.ticker;
+              const category = item.category || opp.category || 'CANDIDATE';
+              const entry = item.entry_price || '0.00';
+              const maxEntry = item.max_entry_price || entry;
+              
+              const rawProb = String(item.conservative_probability || item.estimated_probability || '0');
+              const probNum = parseFloat(rawProb.replace('%', '')) || 0;
+              const probDisplay = rawProb.includes('%') ? rawProb : `${(probNum <= 1 ? probNum * 100 : probNum).toFixed(1)}%`;
+
+              const rawRoi = String(item.net_roi || '0');
+              let roiDisplay = '+0.0%';
+              if (rawRoi.includes('%')) {
+                roiDisplay = rawRoi.startsWith('+') ? rawRoi : `+${rawRoi}`;
+              } else {
+                const roiNum = parseFloat(rawRoi) || 0;
+                roiDisplay = `+${(roiNum < 2 ? roiNum * 100 : roiNum).toFixed(1)}%`;
+              }
+
+              const stake = item.recommended_stake || (parseFloat(entry) * (parseInt(item.recommended_contracts) || 1)).toFixed(2);
+
               return (
                 <tr
-                  key={opp.ticker + idx}
+                  key={ticker + idx}
                   className="hover:bg-zinc-900/40 transition group cursor-pointer"
-                  onClick={() => onSelect(opp)}
+                  onClick={() => onSelect(item)}
                 >
                   <td className="py-3 px-4">
                     <span
@@ -69,37 +90,37 @@ export const OpportunitiesTable: React.FC<OpportunitiesTableProps> = ({
                           : 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/30'
                       }`}
                     >
-                      {opp.action}
+                      {item.action || opp.action}
                     </span>
                   </td>
                   <td className="py-3 px-4 font-semibold text-white">
-                    {opp.ticker}
+                    {ticker}
                   </td>
                   <td className="py-3 px-4">
                     <span
                       className={`px-1.5 py-0.5 rounded text-[10px] ${
-                        opp.category === 'STRONG_CANDIDATE'
+                        category === 'STRONG_CANDIDATE'
                           ? 'bg-emerald-950 text-emerald-300 border border-emerald-800'
                           : 'bg-zinc-800 text-zinc-300'
                       }`}
                     >
-                      {opp.category}
+                      {category}
                     </span>
                   </td>
                   <td className="py-3 px-4 text-right text-zinc-200">
-                    ${opp.entry_price}
+                    ${entry}
                   </td>
                   <td className="py-3 px-4 text-right text-zinc-400">
-                    ${opp.max_entry_price}
+                    ${maxEntry}
                   </td>
                   <td className="py-3 px-4 text-right text-zinc-300">
-                    {(parseFloat(opp.conservative_probability) * 100).toFixed(1)}%
+                    {probDisplay}
                   </td>
                   <td className="py-3 px-4 text-right font-bold text-emerald-400">
-                    +{(parseFloat(opp.net_roi) * 100).toFixed(1)}%
+                    {roiDisplay}
                   </td>
                   <td className="py-3 px-4 text-right text-zinc-200">
-                    ${opp.recommended_stake}
+                    ${stake}
                   </td>
                   <td className="py-3 px-4 text-center">
                     <button className="p-1 rounded bg-zinc-800 group-hover:bg-zinc-700 text-zinc-400 group-hover:text-white transition">
